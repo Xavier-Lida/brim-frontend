@@ -150,3 +150,19 @@ export type ExpenseReport = {
   ai_reasoning: string;
   created_at?: string;
 };
+
+export type FlagsPage = {
+  items: TransactionFlag[];
+  has_more: boolean;
+  limit: number;
+  offset: number;
+  unread_count: number;
+};
+
+export type ReportsPage = {
+  items: ExpenseReport[];
+  has_more: boolean;
+  limit: number;
+  offset: number;
+  total_count?: number;
+};

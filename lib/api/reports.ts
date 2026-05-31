@@ -1,9 +1,16 @@
 import { apiFetch } from "@/lib/api/client";
 import { mockLlm } from "@/lib/api/config";
-import type { ExpenseReport } from "@/lib/types/brim";
+import { normalizeReportsPage } from "@/lib/api/pagination";
+import type { ExpenseReport, ReportsPage } from "@/lib/types/brim";
 
-export function getReports() {
-  return apiFetch<ExpenseReport[]>("/api/reports");
+export const REPORTS_PAGE_SIZE = 100;
+
+export function getReports(params?: { limit?: number; offset?: number }) {
+  const limit = params?.limit ?? REPORTS_PAGE_SIZE;
+  const offset = params?.offset ?? 0;
+  return apiFetch<unknown>("/api/reports", {
+    params: { limit, offset },
+  }).then((data) => normalizeReportsPage(data, limit, offset));
 }
 
 type GenerateReportsParams = {
@@ -39,3 +46,5 @@ export function generateReports(
     },
   });
 }
+
+export type { ReportsPage };
