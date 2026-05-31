@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CircleNotchIcon } from "@phosphor-icons/react";
 import { EmployeeMapFilter } from "@/components/reports/purchase-map/employee-map-filter";
 import { MapLegend } from "@/components/reports/purchase-map/map-legend";
@@ -42,7 +42,6 @@ export function PurchaseMapSection() {
   const [employees, setEmployees] = useState<EmployeeRosterEntry[]>([]);
   const [employeesLoading, setEmployeesLoading] = useState(true);
   const [employeesError, setEmployeesError] = useState<string | null>(null);
-  const hasInitializedSelection = useRef(false);
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState("");
@@ -68,14 +67,6 @@ export function PurchaseMapSection() {
     try {
       const data = await getEmployees();
       setEmployees(data);
-      if (!hasInitializedSelection.current) {
-        hasInitializedSelection.current = true;
-        setSelectedIds(
-          data
-            .filter((e) => e.map_transaction_count > 0)
-            .map((e) => e.id)
-        );
-      }
     } catch (err) {
       setEmployeesError(
         err instanceof Error ? err.message : "Failed to load employees"

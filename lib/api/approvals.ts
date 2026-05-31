@@ -1,9 +1,16 @@
 import { apiFetch } from "@/lib/api/client";
 import { mockLlm } from "@/lib/api/config";
+import { normalizeApprovalsPage } from "@/lib/api/pagination";
 import type { ApprovalRequest, ApprovalStatus } from "@/lib/types/brim";
 
-export function getApprovals() {
-  return apiFetch<ApprovalRequest[]>("/api/approvals");
+export const APPROVALS_PAGE_SIZE = 50;
+
+export function getApprovals(params?: { limit?: number; offset?: number }) {
+  const limit = params?.limit ?? APPROVALS_PAGE_SIZE;
+  const offset = params?.offset ?? 0;
+  return apiFetch<unknown>("/api/approvals", {
+    params: { limit, offset },
+  }).then((data) => normalizeApprovalsPage(data, limit, offset));
 }
 
 export function decideApproval(

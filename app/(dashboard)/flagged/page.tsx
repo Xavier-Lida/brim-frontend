@@ -1,10 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { toast } from "sonner";
-import { FlagCard } from "@/components/flagged/flag-card";
+import { FlagRow } from "@/components/flagged/flag-row";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { useMockStore } from "@/lib/hooks/use-mock-store";
+import { getSeverityCounts } from "@/lib/flags/severity";
+import type { TransactionFlag } from "@/lib/types/brim";
+
+function matchesQuery(flag: TransactionFlag, query: string): boolean {
+  const q = query.toLowerCase().trim();
+  if (!q) return true;
+  const txn = flag.transaction;
+  return (
+    (flag.employee_name ?? "").toLowerCase().includes(q) ||
+    (txn?.employee_name ?? "").toLowerCase().includes(q) ||
+    (txn?.merchant_name ?? "").toLowerCase().includes(q)
+  );
+}
 
 export default function FlaggedPage() {
   const {
@@ -22,6 +38,8 @@ export default function FlaggedPage() {
   } = useMockStore();
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [unreviewedOnly, setUnreviewedOnly] = useState(false);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     if (flags.length === 0 && !flagsLoading) {
@@ -29,9 +47,18 @@ export default function FlaggedPage() {
     }
   }, [flags.length, flagsLoading, loadFlags]);
 
-  const sorted = [...flags].sort((a, b) => b.weight - a.weight);
-  const unread = sorted.filter((f) => !f.reviewed);
-  const reviewed = sorted.filter((f) => f.reviewed);
+  const sorted = useMemo(
+    () => [...flags].sort((a, b) => b.weight - a.weight),
+    [flags]
+  );
+  const severityCounts = useMemo(() => getSeverityCounts(sorted), [sorted]);
+  const visible = useMemo(
+    () =>
+      sorted.filter(
+        (f) => (!unreviewedOnly || !f.reviewed) && matchesQuery(f, query)
+      ),
+    [sorted, unreviewedOnly, query]
+  );
 
   const handleReview = async (id: string) => {
     setSubmittingId(id);
@@ -77,7 +104,7 @@ export default function FlaggedPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div className="mx-auto flex max-w-3xl flex-col gap-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-xl font-normal text-foreground/90">
@@ -85,9 +112,6 @@ export default function FlaggedPage() {
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {unreadFlagsCount} unreviewed flag{unreadFlagsCount !== 1 ? "s" : ""} total
-            {unread.length > 0
-              ? ` · showing ${unread.length} active in loaded batch`
-              : ""}
             {flagsHasMore ? " · more available" : ""}
           </p>
         </div>
@@ -100,35 +124,51 @@ export default function FlaggedPage() {
         </Button>
       </div>
 
-      <div className="flex flex-col gap-4">
-        {unread.map((flag) => (
-          <FlagCard
+      <div className="flex flex-wrap items-center gap-2">
+        <SeverityCounter label="High" count={severityCounts.high} dotClass="bg-red-600" />
+        <SeverityCounter label="Medium" count={severityCounts.medium} dotClass="bg-orange-500" />
+        <SeverityCounter label="Low" count={severityCounts.low} dotClass="bg-muted-foreground/40" />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="relative min-w-0 flex-1">
+          <MagnifyingGlassIcon className="absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search by employee or merchant…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="border-border/60 bg-muted/50 pl-8"
+          />
+        </div>
+        <label className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
+          <Switch
+            size="sm"
+            checked={unreviewedOnly}
+            onCheckedChange={setUnreviewedOnly}
+          />
+          Unreviewed only
+        </label>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        {visible.map((flag) => (
+          <FlagRow
             key={flag.id}
             flag={flag}
             onReview={handleReview}
             isSubmitting={submittingId === flag.id}
           />
         ))}
-        {unread.length === 0 && (
+        {visible.length === 0 && (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            All loaded flags reviewed.
+            {query.trim()
+              ? `No flags match "${query.trim()}".`
+              : unreviewedOnly
+                ? "All loaded flags reviewed."
+                : "No flagged transactions."}
           </p>
         )}
       </div>
-
-      {reviewed.length > 0 && (
-        <div className="flex flex-col gap-4">
-          <h3 className="text-sm font-medium text-muted-foreground">Reviewed</h3>
-          {reviewed.map((flag) => (
-            <FlagCard
-              key={flag.id}
-              flag={flag}
-              onReview={handleReview}
-              isSubmitting={submittingId === flag.id}
-            />
-          ))}
-        </div>
-      )}
 
       {flagsHasMore && (
         <div className="flex justify-center pb-4">
@@ -141,6 +181,24 @@ export default function FlaggedPage() {
           </Button>
         </div>
       )}
+    </div>
+  );
+}
+
+function SeverityCounter({
+  label,
+  count,
+  dotClass,
+}: {
+  label: string;
+  count: number;
+  dotClass: string;
+}) {
+  return (
+    <div className="flex items-center gap-1.5 rounded-full border border-border/60 px-2.5 py-1 text-xs text-muted-foreground">
+      <span className={`size-2 rounded-full ${dotClass}`} />
+      <span className="font-medium text-foreground">{count}</span>
+      {label}
     </div>
   );
 }
