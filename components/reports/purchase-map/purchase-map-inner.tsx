@@ -1,13 +1,18 @@
 "use client";
 
-import "leaflet/dist/leaflet.css";
-import { MapContainer, TileLayer } from "react-leaflet";
+import "mapbox-gl/dist/mapbox-gl.css";
+import Map from "react-map-gl/mapbox";
 import { MapFitBounds } from "@/components/reports/purchase-map/map-fit-bounds";
 import { PurchaseMapLayers } from "@/components/reports/purchase-map/purchase-map-layers";
 import type { MapEmployeePurchases } from "@/lib/types/map";
 
-const DEFAULT_CENTER: [number, number] = [56, -96];
-const DEFAULT_ZOOM = 4;
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+
+const DEFAULT_VIEW = {
+  longitude: -96,
+  latitude: 56,
+  zoom: 4,
+};
 
 type PurchaseMapInnerProps = {
   employees: MapEmployeePurchases[];
@@ -29,19 +34,26 @@ export default function PurchaseMapInner({
     }
   }
 
+  if (!MAPBOX_TOKEN) {
+    return (
+      <div className="flex h-full items-center justify-center px-4">
+        <p className="text-center text-sm text-muted-foreground">
+          Map unavailable: missing NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <MapContainer
-      center={DEFAULT_CENTER}
-      zoom={DEFAULT_ZOOM}
-      className="h-full w-full"
-      scrollWheelZoom
+    <Map
+      mapboxAccessToken={MAPBOX_TOKEN}
+      mapStyle="mapbox://styles/mapbox/light-v11"
+      initialViewState={DEFAULT_VIEW}
+      scrollZoom
+      style={{ width: "100%", height: "100%" }}
     >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
       <MapFitBounds positions={positions} boundsKey={boundsKey} />
       <PurchaseMapLayers employees={employees} colorIndex={colorIndex} />
-    </MapContainer>
+    </Map>
   );
 }

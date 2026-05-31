@@ -134,8 +134,7 @@
 }
 
 .purchase-map-pin {
-  background: transparent !important;
-  border: none !important;
+  cursor: pointer;
 }
 
 @layer base {
