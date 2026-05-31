@@ -25,6 +25,14 @@ export type Employee = {
   department_name: string;
 };
 
+/** Full roster from GET /api/employees (map UI, future assistant pickers). */
+export type EmployeeRosterEntry = {
+  id: string;
+  name: string;
+  department: string;
+  map_transaction_count: number;
+};
+
 export type TransactionStatus = "pending" | "approved" | "denied" | "flagged";
 
 export type Transaction = {

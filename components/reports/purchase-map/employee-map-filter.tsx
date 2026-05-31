@@ -11,28 +11,56 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { MapEmployee } from "@/lib/types/map";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import type { EmployeeRosterEntry } from "@/lib/types/brim";
+import { cn } from "@/lib/utils";
 
 type EmployeeMapFilterProps = {
-  employees: MapEmployee[];
+  employees: EmployeeRosterEntry[];
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
 };
+
+function isSelectable(emp: EmployeeRosterEntry) {
+  return emp.map_transaction_count > 0;
+}
+
+function countLabel(emp: EmployeeRosterEntry) {
+  if (emp.map_transaction_count === 0) {
+    return "No geo purchases";
+  }
+  const n = emp.map_transaction_count;
+  return `${n} geo purchase${n !== 1 ? "s" : ""}`;
+}
 
 export function EmployeeMapFilter({
   employees,
   selectedIds,
   onSelectionChange,
 }: EmployeeMapFilterProps) {
+  const selectable = employees.filter(isSelectable);
+  const selectableIds = selectable.map((e) => e.id);
+
   const toggle = (id: string) => {
+    const emp = employees.find((e) => e.id === id);
+    if (!emp || !isSelectable(emp)) return;
     const next = selectedIds.includes(id)
       ? selectedIds.filter((x) => x !== id)
       : [...selectedIds, id];
     onSelectionChange(next);
   };
 
-  const selectAll = () => onSelectionChange(employees.map((e) => e.id));
+  const selectAll = () => onSelectionChange(selectableIds);
   const clearAll = () => onSelectionChange([]);
+
+  const allSelectableSelected =
+    selectableIds.length > 0 &&
+    selectableIds.every((id) => selectedIds.includes(id));
 
   return (
     <DropdownMenu>
@@ -46,41 +74,62 @@ export function EmployeeMapFilter({
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="max-h-72 w-56 overflow-y-auto">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Show on map</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuCheckboxItem
-            checked={selectedIds.length === employees.length && employees.length > 0}
-            onCheckedChange={() =>
-              selectedIds.length === employees.length ? clearAll() : selectAll()
-            }
-          >
-            Select all
-          </DropdownMenuCheckboxItem>
-          <DropdownMenuCheckboxItem
-            checked={selectedIds.length === 0}
-            onCheckedChange={() => clearAll()}
-          >
-            Clear selection
-          </DropdownMenuCheckboxItem>
-          <DropdownMenuSeparator />
-          {employees.map((emp) => (
+      <DropdownMenuContent align="start" className="max-h-72 w-64 overflow-y-auto">
+        <TooltipProvider delayDuration={200}>
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Show on map</DropdownMenuLabel>
+            <DropdownMenuSeparator />
             <DropdownMenuCheckboxItem
-              key={emp.id}
-              checked={selectedIds.includes(emp.id)}
-              onCheckedChange={() => toggle(emp.id)}
+              checked={allSelectableSelected}
+              onCheckedChange={() =>
+                allSelectableSelected ? clearAll() : selectAll()
+              }
+              disabled={selectable.length === 0}
             >
-              <span className="flex flex-col gap-0.5">
-                <span>{emp.name}</span>
-                <span className="text-xs text-muted-foreground">
-                  {emp.transaction_count} transaction
-                  {emp.transaction_count !== 1 ? "s" : ""}
-                </span>
-              </span>
+              Select all with geo purchases
             </DropdownMenuCheckboxItem>
-          ))}
-        </DropdownMenuGroup>
+            <DropdownMenuCheckboxItem
+              checked={selectedIds.length === 0}
+              onCheckedChange={() => clearAll()}
+            >
+              Clear selection
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuSeparator />
+            {employees.map((emp) => {
+              const disabled = !isSelectable(emp);
+              const item = (
+                <DropdownMenuCheckboxItem
+                  key={emp.id}
+                  checked={selectedIds.includes(emp.id)}
+                  disabled={disabled}
+                  onCheckedChange={() => toggle(emp.id)}
+                  className={cn(disabled && "opacity-50")}
+                >
+                  <span className="flex flex-col gap-0.5">
+                    <span>{emp.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {emp.department ? `${emp.department} · ` : ""}
+                      {countLabel(emp)}
+                    </span>
+                  </span>
+                </DropdownMenuCheckboxItem>
+              );
+
+              if (!disabled) return item;
+
+              return (
+                <Tooltip key={emp.id}>
+                  <TooltipTrigger asChild>
+                    <span className="block w-full">{item}</span>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    Aucun achat géolocalisé
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </DropdownMenuGroup>
+        </TooltipProvider>
       </DropdownMenuContent>
     </DropdownMenu>
   );

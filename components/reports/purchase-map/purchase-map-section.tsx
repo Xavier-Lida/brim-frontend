@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CircleNotchIcon } from "@phosphor-icons/react";
 import { EmployeeMapFilter } from "@/components/reports/purchase-map/employee-map-filter";
 import { MapLegend } from "@/components/reports/purchase-map/map-legend";
@@ -15,9 +15,11 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getMapEmployees, getMapPurchases } from "@/lib/api/map";
+import { getEmployees } from "@/lib/api/employees";
+import { getMapPurchases } from "@/lib/api/map";
 import { buildEmployeeColorIndex } from "@/lib/map/colors";
-import type { MapEmployee, MapPurchasesResponse } from "@/lib/types/map";
+import type { EmployeeRosterEntry } from "@/lib/types/brim";
+import type { MapPurchasesResponse } from "@/lib/types/map";
 
 const PurchaseMap = dynamic(() => import("./purchase-map-inner"), {
   ssr: false,
@@ -26,10 +28,21 @@ const PurchaseMap = dynamic(() => import("./purchase-map-inner"), {
   ),
 });
 
+function idsWithGeoPurchases(
+  roster: EmployeeRosterEntry[],
+  ids: string[]
+): string[] {
+  return ids.filter((id) => {
+    const emp = roster.find((e) => e.id === id);
+    return emp != null && emp.map_transaction_count > 0;
+  });
+}
+
 export function PurchaseMapSection() {
-  const [employees, setEmployees] = useState<MapEmployee[]>([]);
+  const [employees, setEmployees] = useState<EmployeeRosterEntry[]>([]);
   const [employeesLoading, setEmployeesLoading] = useState(true);
   const [employeesError, setEmployeesError] = useState<string | null>(null);
+  const hasInitializedSelection = useRef(false);
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState("");
@@ -44,12 +57,25 @@ export function PurchaseMapSection() {
     [employees]
   );
 
+  const purchasesEmployeeIds = useMemo(
+    () => idsWithGeoPurchases(employees, selectedIds),
+    [employees, selectedIds]
+  );
+
   const loadEmployees = useCallback(async () => {
     setEmployeesLoading(true);
     setEmployeesError(null);
     try {
-      const data = await getMapEmployees();
+      const data = await getEmployees();
       setEmployees(data);
+      if (!hasInitializedSelection.current) {
+        hasInitializedSelection.current = true;
+        setSelectedIds(
+          data
+            .filter((e) => e.map_transaction_count > 0)
+            .map((e) => e.id)
+        );
+      }
     } catch (err) {
       setEmployeesError(
         err instanceof Error ? err.message : "Failed to load employees"
@@ -64,7 +90,7 @@ export function PurchaseMapSection() {
   }, [loadEmployees]);
 
   useEffect(() => {
-    if (selectedIds.length === 0) {
+    if (purchasesEmployeeIds.length === 0) {
       setPurchases(null);
       setPurchasesError(null);
       setPurchasesLoading(false);
@@ -76,7 +102,7 @@ export function PurchaseMapSection() {
     setPurchasesError(null);
 
     void getMapPurchases({
-      employee_ids: selectedIds,
+      employee_ids: purchasesEmployeeIds,
       date_from: dateFrom || undefined,
       date_to: dateTo || undefined,
     })
@@ -98,27 +124,32 @@ export function PurchaseMapSection() {
     return () => {
       cancelled = true;
     };
-  }, [selectedIds, dateFrom, dateTo]);
+  }, [purchasesEmployeeIds, dateFrom, dateTo]);
 
   const mapEmployees = purchases?.employees ?? [];
   const totalPoints = mapEmployees.reduce((n, e) => n + e.points.length, 0);
 
   const boundsKey = useMemo(() => {
-    const parts: string[] = [selectedIds.join(","), dateFrom, dateTo];
+    const parts: string[] = [purchasesEmployeeIds.join(","), dateFrom, dateTo];
     for (const emp of mapEmployees) {
       for (const p of emp.points) {
         parts.push(`${p.transaction_id}:${p.lat},${p.lng}`);
       }
     }
     return parts.join("|");
-  }, [selectedIds, dateFrom, dateTo, mapEmployees]);
+  }, [purchasesEmployeeIds, dateFrom, dateTo, mapEmployees]);
 
   const showMap =
-    selectedIds.length > 0 && !purchasesLoading && !purchasesError && totalPoints > 0;
+    purchasesEmployeeIds.length > 0 &&
+    !purchasesLoading &&
+    !purchasesError &&
+    totalPoints > 0;
 
   const mapEmptyMessage =
-    selectedIds.length === 0
-      ? "Select one or more employees to show purchases on the map."
+    purchasesEmployeeIds.length === 0
+      ? selectedIds.length === 0
+        ? "Select one or more employees to show purchases on the map."
+        : "Selected employees have no geolocated purchases."
       : purchasesLoading
         ? null
         : totalPoints === 0

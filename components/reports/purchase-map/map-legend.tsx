@@ -1,10 +1,10 @@
 "use client";
 
-import type { MapEmployee } from "@/lib/types/map";
+import type { EmployeeRosterEntry } from "@/lib/types/brim";
 import { getEmployeeColor } from "@/lib/map/colors";
 
 type MapLegendProps = {
-  employees: MapEmployee[];
+  employees: EmployeeRosterEntry[];
   selectedIds: string[];
   colorIndex: Map<string, number>;
 };
