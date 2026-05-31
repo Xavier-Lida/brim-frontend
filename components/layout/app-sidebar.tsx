@@ -31,7 +31,7 @@ import { useMockStore } from "@/lib/hooks/use-mock-store";
 const navItems = [
   { title: "Brim Assistant", href: "/assistant", icon: SparkleIcon },
   { title: "Approvals", href: "/approvals", icon: CheckCircleIcon, badge: "approvals" as const },
-  { title: "Flagged", href: "/flagged", icon: FlagIcon, badge: "flags" as const },
+  { title: "Flagged", href: "/flagged", icon: FlagIcon },
   { title: "Transactions", href: "/transactions", icon: ReceiptIcon },
   { title: "Reports", href: "/reports", icon: FileTextIcon },
   { title: "Policy", href: "/policy", icon: ShieldIcon },
@@ -40,11 +40,10 @@ const navItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { pendingApprovalsCount, unreadFlagsCount } = useMockStore();
+  const { pendingApprovalsCount } = useMockStore();
 
-  const getBadgeCount = (type?: "approvals" | "flags") => {
+  const getBadgeCount = (type?: "approvals") => {
     if (type === "approvals") return pendingApprovalsCount;
-    if (type === "flags") return unreadFlagsCount;
     return 0;
   };
 

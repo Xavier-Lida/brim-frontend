@@ -23,7 +23,6 @@ import { getEmployees } from "@/lib/api/employees";
 import {
   FLAGS_PAGE_SIZE,
   getFlags,
-  markFlagReviewed as markFlagReviewedApi,
 } from "@/lib/api/flags";
 import {
   getNotifications,
@@ -101,7 +100,6 @@ type MockStore = {
   isLoading: boolean;
   error: string | null;
   pendingApprovalsCount: number;
-  unreadFlagsCount: number;
   unreadNotificationsCount: number;
   activePoliciesCount: number;
   setSearchQuery: (query: string) => void;
@@ -133,7 +131,6 @@ type MockStore = {
     pdf_base64?: string;
   }) => Promise<PolicyImportDraft[]>;
   decideApproval: (id: string, status: ApprovalStatus) => Promise<void>;
-  markFlagReviewed: (id: string) => Promise<void>;
   markNotificationRead: (id: string) => Promise<void>;
   sendAssistantMessage: (text: string) => Promise<void>;
   runComplianceScan: () => Promise<void>;
@@ -163,7 +160,6 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
   const [flagsHasMore, setFlagsHasMore] = useState(false);
   const [flagsLoading, setFlagsLoading] = useState(false);
   const [flagsLoadingMore, setFlagsLoadingMore] = useState(false);
-  const [flagsUnreadCount, setFlagsUnreadCount] = useState(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const transactionsRef = useRef<Transaction[]>([]);
   const [transactionsHasMore, setTransactionsHasMore] = useState(false);
@@ -274,7 +270,6 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
       });
       setFlags(page.items);
       setFlagsHasMore(page.has_more);
-      setFlagsUnreadCount(page.unread_count);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load flags");
     } finally {
@@ -293,7 +288,6 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
       });
       setFlags((prev) => mergeFlags(prev, page.items));
       setFlagsHasMore(page.has_more);
-      setFlagsUnreadCount(page.unread_count);
     } finally {
       setFlagsLoadingMore(false);
     }
@@ -411,8 +405,6 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     void refreshAll();
   }, [refreshAll]);
 
-  const unreadFlagsCount = flagsUnreadCount;
-
   const unreadNotificationsCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
     [notifications]
@@ -489,17 +481,6 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     },
     [refreshApprovals, refreshTransactions, refreshNotifications]
   );
-
-  const markFlagReviewed = useCallback(async (id: string) => {
-    const flag = flagsRef.current.find((f) => f.id === id);
-    await markFlagReviewedApi(id);
-    if (flag && !flag.reviewed) {
-      setFlagsUnreadCount((c) => Math.max(0, c - 1));
-    }
-    setFlags((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, reviewed: true } : f))
-    );
-  }, []);
 
   const runComplianceScan = useCallback(async () => {
     await runComplianceScanApi();
@@ -640,7 +621,6 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     isLoading,
     error,
     pendingApprovalsCount,
-    unreadFlagsCount,
     unreadNotificationsCount,
     activePoliciesCount,
     setSearchQuery,
@@ -665,8 +645,7 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     importPolicies,
     analyzeImport,
     decideApproval,
-    markFlagReviewed,
-    markNotificationRead,
+  markNotificationRead,
     sendAssistantMessage,
     runComplianceScan,
     analyzeForFlags,

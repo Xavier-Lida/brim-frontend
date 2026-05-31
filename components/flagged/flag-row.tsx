@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { CaretRightIcon } from "@phosphor-icons/react";
-import { Switch } from "@/components/ui/switch";
 import { formatCad } from "@/lib/approvals/display";
 import {
   severityDotClass,
@@ -14,11 +13,9 @@ import type { Transaction, TransactionFlag } from "@/lib/types/brim";
 
 type FlagRowProps = {
   flag: TransactionFlag;
-  onReview: (id: string) => void | Promise<void>;
-  isSubmitting?: boolean;
 };
 
-export function FlagRow({ flag, onReview, isSubmitting = false }: FlagRowProps) {
+export function FlagRow({ flag }: FlagRowProps) {
   const [expanded, setExpanded] = useState(false);
   const txn = flag.transaction;
   const employee = flag.employee_name ?? txn?.employee_name ?? "Unknown employee";
@@ -30,74 +27,58 @@ export function FlagRow({ flag, onReview, isSubmitting = false }: FlagRowProps) 
   const incidentCount = related.length > 0 ? related.length : 1;
 
   return (
-    <div
-      className={cn(
-        "rounded-lg border border-border/50 transition-colors",
-        flag.reviewed ? "opacity-50" : "bg-card"
-      )}
-    >
-      <div className="flex items-center gap-3 px-3 py-2.5">
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          className="flex min-w-0 flex-1 items-center gap-3 text-left"
-          aria-expanded={expanded}
-        >
-          <span
-            className={cn(
-              "size-2.5 shrink-0 rounded-full",
-              severityDotClass(flag.weight)
-            )}
-            title={`${severityLabel(flag.weight)} severity`}
-          />
-          <CaretRightIcon
-            className={cn(
-              "size-3.5 shrink-0 text-muted-foreground transition-transform",
-              expanded && "rotate-90"
-            )}
-          />
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="truncate text-sm font-medium text-foreground">
-                {employee}
-                <span className="ml-2 text-xs font-normal text-muted-foreground">
-                  {txn?.merchant_name ?? flag.transaction_id}
-                  {txn ? ` · ${formatCad(txn.amount)}` : ""}
-                </span>
-              </p>
-              {flag.policy_name && (
-                <span className="shrink-0 rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[0.65rem] font-medium text-muted-foreground">
-                  {flag.policy_name}
-                </span>
-              )}
-            </div>
-            <p className="truncate text-xs text-muted-foreground">
-              {flag.warning_message}
+    <div className="rounded-lg border border-border/50 bg-card transition-colors">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-center gap-3 px-3 py-2.5 text-left"
+        aria-expanded={expanded}
+      >
+        <CaretRightIcon
+          className={cn(
+            "size-3.5 shrink-0 text-muted-foreground transition-transform",
+            expanded && "rotate-90"
+          )}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="truncate text-sm font-medium text-foreground">
+              {employee}
             </p>
+            {flag.policy_name ? (
+              <span className="shrink-0 rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[0.65rem] font-medium text-muted-foreground">
+                {flag.policy_name}
+              </span>
+            ) : (
+              <span className="text-xs text-muted-foreground">Unknown policy</span>
+            )}
           </div>
-        </button>
-
-        <span className="shrink-0 text-xs font-medium tabular-nums text-muted-foreground">
-          {flag.weight}/5
-        </span>
-
-        <label className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
-          <span className="hidden sm:inline">Reviewed</span>
-          <Switch
-            size="sm"
-            checked={flag.reviewed}
-            disabled={flag.reviewed || isSubmitting}
-            onCheckedChange={(checked) => {
-              if (checked && !flag.reviewed) void onReview(flag.id);
-            }}
-            aria-label="Mark flag reviewed"
-          />
-        </label>
-      </div>
+        </div>
+      </button>
 
       {expanded && (
         <div className="flex flex-col gap-3 border-t border-border/50 px-3 py-3 pl-[2.1rem]">
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                "size-2.5 shrink-0 rounded-full",
+                severityDotClass(flag.weight)
+              )}
+              title={`${severityLabel(flag.weight)} severity`}
+            />
+            <span className="text-xs font-medium text-muted-foreground">
+              {severityLabel(flag.weight)} · {flag.weight}/5
+            </span>
+          </div>
+
           <p className="text-sm text-foreground">{flag.warning_message}</p>
+
+          {(txn?.merchant_name || typeof txn?.amount === "number") && (
+            <p className="text-xs text-muted-foreground">
+              {txn?.merchant_name ?? flag.transaction_id}
+              {typeof txn?.amount === "number" ? ` · ${formatCad(txn.amount)}` : ""}
+            </p>
+          )}
 
           {incidentCount > 1 && (
             <div className="flex flex-col gap-2">

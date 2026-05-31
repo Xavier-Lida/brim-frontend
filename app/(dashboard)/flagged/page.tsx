@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { FlagRow } from "@/components/flagged/flag-row";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { useMockStore } from "@/lib/hooks/use-mock-store";
 import { getSeverityCounts } from "@/lib/flags/severity";
 import type { TransactionFlag } from "@/lib/types/brim";
@@ -18,7 +17,8 @@ function matchesQuery(flag: TransactionFlag, query: string): boolean {
   return (
     (flag.employee_name ?? "").toLowerCase().includes(q) ||
     (txn?.employee_name ?? "").toLowerCase().includes(q) ||
-    (txn?.merchant_name ?? "").toLowerCase().includes(q)
+    (txn?.merchant_name ?? "").toLowerCase().includes(q) ||
+    (flag.policy_name ?? "").toLowerCase().includes(q)
   );
 }
 
@@ -28,20 +28,16 @@ export default function FlaggedPage() {
     flagsHasMore,
     flagsLoading,
     flagsLoadingMore,
-    unreadFlagsCount,
-    markFlagReviewed,
     analyzeForFlags,
     loadMoreFlags,
     error,
     refreshAll,
   } = useMockStore();
-  const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyzeProgress, setAnalyzeProgress] = useState<{
     current: number;
     total: number;
   } | null>(null);
-  const [unreviewedOnly, setUnreviewedOnly] = useState(false);
   const [query, setQuery] = useState("");
 
   const sorted = useMemo(
@@ -50,24 +46,9 @@ export default function FlaggedPage() {
   );
   const severityCounts = useMemo(() => getSeverityCounts(sorted), [sorted]);
   const visible = useMemo(
-    () =>
-      sorted.filter(
-        (f) => (!unreviewedOnly || !f.reviewed) && matchesQuery(f, query)
-      ),
-    [sorted, unreviewedOnly, query]
+    () => sorted.filter((f) => matchesQuery(f, query)),
+    [sorted, query]
   );
-
-  const handleReview = async (id: string) => {
-    setSubmittingId(id);
-    try {
-      await markFlagReviewed(id);
-      toast.success("Flag marked as reviewed");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to mark flag reviewed");
-    } finally {
-      setSubmittingId(null);
-    }
-  };
 
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
@@ -99,7 +80,6 @@ export default function FlaggedPage() {
   const showEmptyAnalyzeCta =
     visible.length === 0 &&
     !query.trim() &&
-    !unreviewedOnly &&
     !flagsLoading &&
     !isAnalyzing;
 
@@ -131,7 +111,7 @@ export default function FlaggedPage() {
             {progressLabel ??
               (flagsLoading && flags.length === 0
                 ? "Loading flags…"
-                : `${unreadFlagsCount} unreviewed flag${unreadFlagsCount !== 1 ? "s" : ""} total${
+                : `${flags.length} flag${flags.length !== 1 ? "s" : ""}${
                     flagsHasMore ? " · more available" : ""
                   }`)}
           </p>
@@ -148,26 +128,15 @@ export default function FlaggedPage() {
         <SeverityCounter label="Low" count={severityCounts.low} dotClass="bg-muted-foreground/40" />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="relative min-w-0 flex-1">
-          <MagnifyingGlassIcon className="absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search by employee or merchant…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="border-border/60 bg-muted/50 pl-8"
-            disabled={isAnalyzing}
-          />
-        </div>
-        <label className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
-          <Switch
-            size="sm"
-            checked={unreviewedOnly}
-            onCheckedChange={setUnreviewedOnly}
-            disabled={isAnalyzing}
-          />
-          Unreviewed only
-        </label>
+      <div className="relative min-w-0">
+        <MagnifyingGlassIcon className="absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Search by employee, merchant, or policy…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="border-border/60 bg-muted/50 pl-8"
+          disabled={isAnalyzing}
+        />
       </div>
 
       <div className="flex flex-col gap-2">
@@ -177,20 +146,13 @@ export default function FlaggedPage() {
           </p>
         )}
         {visible.map((flag) => (
-          <FlagRow
-            key={flag.id}
-            flag={flag}
-            onReview={handleReview}
-            isSubmitting={submittingId === flag.id || isAnalyzing}
-          />
+          <FlagRow key={flag.id} flag={flag} />
         ))}
         {visible.length === 0 && !showEmptyAnalyzeCta && (
           <p className="py-8 text-center text-sm text-muted-foreground">
             {query.trim()
               ? `No flags match "${query.trim()}".`
-              : unreviewedOnly
-                ? "All loaded flags reviewed."
-                : "No flagged transactions."}
+              : "No flagged transactions."}
           </p>
         )}
         {showEmptyAnalyzeCta && (
