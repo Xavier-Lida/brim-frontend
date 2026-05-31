@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -33,7 +34,7 @@ import {
   generateReports as generateReportsApi,
   getReports,
 } from "@/lib/api/reports";
-import { getTransactions } from "@/lib/api/transactions";
+import { getTransactions, TRANSACTIONS_PAGE_SIZE } from "@/lib/api/transactions";
 import {
   companySpend,
   initialAssistantMessages,
@@ -58,6 +59,9 @@ type MockStore = {
   approvals: ApprovalRequest[];
   flags: TransactionFlag[];
   transactions: Transaction[];
+  transactionsHasMore: boolean;
+  transactionsLoading: boolean;
+  transactionsLoadingMore: boolean;
   reports: ExpenseReport[];
   notifications: Notification[];
   assistantMessages: AssistantMessage[];
@@ -71,6 +75,8 @@ type MockStore = {
   unreadNotificationsCount: number;
   activePoliciesCount: number;
   setSearchQuery: (query: string) => void;
+  loadTransactions: () => Promise<void>;
+  loadMoreTransactions: () => Promise<void>;
   refreshTransactions: () => Promise<void>;
   refreshFlags: () => Promise<void>;
   refreshApprovals: () => Promise<void>;
@@ -106,6 +112,10 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
   const [approvals, setApprovals] = useState<ApprovalRequest[]>([]);
   const [flags, setFlags] = useState<TransactionFlag[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const transactionsRef = useRef<Transaction[]>([]);
+  const [transactionsHasMore, setTransactionsHasMore] = useState(false);
+  const [transactionsLoading, setTransactionsLoading] = useState(false);
+  const [transactionsLoadingMore, setTransactionsLoadingMore] = useState(false);
   const [reports, setReports] = useState<ExpenseReport[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [assistantMessages, setAssistantMessages] = useState(
@@ -115,10 +125,50 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refreshTransactions = useCallback(async () => {
-    const data = await getTransactions();
-    setTransactions(data);
+  useEffect(() => {
+    transactionsRef.current = transactions;
+  }, [transactions]);
+
+  const mergeTransactions = useCallback(
+    (prev: Transaction[], incoming: Transaction[]) => {
+      const seen = new Set(prev.map((t) => t.id));
+      const unique = incoming.filter((t) => !seen.has(t.id));
+      return unique.length > 0 ? [...prev, ...unique] : prev;
+    },
+    []
+  );
+
+  const loadTransactions = useCallback(async () => {
+    setTransactionsLoading(true);
+    try {
+      const page = await getTransactions({
+        limit: TRANSACTIONS_PAGE_SIZE,
+        offset: 0,
+      });
+      setTransactions(page.items);
+      setTransactionsHasMore(page.has_more);
+    } finally {
+      setTransactionsLoading(false);
+    }
   }, []);
+
+  const loadMoreTransactions = useCallback(async () => {
+    if (!transactionsHasMore || transactionsLoadingMore) return;
+    setTransactionsLoadingMore(true);
+    const offset = transactionsRef.current.length;
+    try {
+      const page = await getTransactions({
+        limit: TRANSACTIONS_PAGE_SIZE,
+        offset,
+      });
+      setTransactions((prev) => mergeTransactions(prev, page.items));
+      setTransactionsHasMore(page.has_more);
+    } finally {
+      setTransactionsLoadingMore(false);
+    }
+  }, [transactionsHasMore, transactionsLoadingMore, mergeTransactions]);
+
+  const refreshTransactions = loadTransactions;
 
   const refreshFlags = useCallback(async () => {
     const data = await getFlags();
@@ -150,7 +200,6 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       await Promise.all([
-        refreshTransactions(),
         refreshFlags(),
         refreshApprovals(),
         refreshReports(),
@@ -163,7 +212,6 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     }
   }, [
-    refreshTransactions,
     refreshFlags,
     refreshApprovals,
     refreshReports,
@@ -326,6 +374,9 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     approvals,
     flags,
     transactions,
+    transactionsHasMore,
+    transactionsLoading,
+    transactionsLoadingMore,
     reports,
     notifications,
     assistantMessages,
@@ -339,6 +390,8 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     unreadNotificationsCount,
     activePoliciesCount,
     setSearchQuery,
+    loadTransactions,
+    loadMoreTransactions,
     refreshTransactions,
     refreshFlags,
     refreshApprovals,

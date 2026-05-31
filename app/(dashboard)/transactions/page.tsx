@@ -1,13 +1,26 @@
 "use client";
 
-import { useMemo } from "react";
-import { TransactionsTable } from "@/components/transactions/transactions-table";
+import { useEffect, useMemo } from "react";
+import { TransactionsTable, TransactionsTableSkeleton } from "@/components/transactions/transactions-table";
 import { Button } from "@/components/ui/button";
 import { useMockStore } from "@/lib/hooks/use-mock-store";
 
 export default function TransactionsPage() {
-  const { transactions, searchQuery, isLoading, error, refreshAll } =
-    useMockStore();
+  const {
+    transactions,
+    transactionsHasMore,
+    transactionsLoading,
+    transactionsLoadingMore,
+    searchQuery,
+    loadTransactions,
+    loadMoreTransactions,
+  } = useMockStore();
+
+  useEffect(() => {
+    if (transactions.length === 0 && !transactionsLoading) {
+      void loadTransactions();
+    }
+  }, [transactions.length, transactionsLoading, loadTransactions]);
 
   const filtered = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
@@ -21,25 +34,8 @@ export default function TransactionsPage() {
     );
   }, [transactions, searchQuery]);
 
-  if (isLoading) {
-    return (
-      <div className="mx-auto flex max-w-5xl flex-col gap-6">
-        <p className="py-8 text-center text-sm text-muted-foreground">
-          Loading transactions…
-        </p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 py-8">
-        <p className="text-sm text-destructive">{error}</p>
-        <Button variant="outline" onClick={() => void refreshAll()}>
-          Retry
-        </Button>
-      </div>
-    );
+  if (transactionsLoading && transactions.length === 0) {
+    return <TransactionsTableSkeleton />;
   }
 
   return (
@@ -47,11 +43,24 @@ export default function TransactionsPage() {
       <div>
         <h2 className="text-xl font-normal text-foreground/90">Transactions</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {filtered.length} transactions
+          Showing {filtered.length} loaded transaction
+          {filtered.length !== 1 ? "s" : ""}
           {searchQuery ? ` matching "${searchQuery}"` : ""}
+          {!searchQuery && transactionsHasMore ? " · more available" : ""}
         </p>
       </div>
       <TransactionsTable transactions={filtered} />
+      {transactionsHasMore && !searchQuery.trim() && (
+        <div className="flex justify-center pb-4">
+          <Button
+            variant="outline"
+            onClick={() => void loadMoreTransactions()}
+            disabled={transactionsLoadingMore}
+          >
+            {transactionsLoadingMore ? "Loading…" : "Load more"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
