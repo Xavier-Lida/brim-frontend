@@ -17,7 +17,11 @@ import {
   runApprovalsPipeline as runApprovalsPipelineApi,
 } from "@/lib/api/approvals";
 import { runComplianceScan as runComplianceScanApi } from "@/lib/api/compliance";
-import { getFlags, markFlagReviewed as markFlagReviewedApi } from "@/lib/api/flags";
+import {
+  FLAGS_PAGE_SIZE,
+  getFlags,
+  markFlagReviewed as markFlagReviewedApi,
+} from "@/lib/api/flags";
 import {
   getNotifications,
   markNotificationReadApi,
@@ -33,6 +37,7 @@ import {
 import {
   generateReports as generateReportsApi,
   getReports,
+  REPORTS_PAGE_SIZE,
 } from "@/lib/api/reports";
 import { getTransactions, TRANSACTIONS_PAGE_SIZE } from "@/lib/api/transactions";
 import {
@@ -61,11 +66,18 @@ type MockStore = {
   policies: Policy[];
   approvals: ApprovalRequest[];
   flags: TransactionFlag[];
+  flagsHasMore: boolean;
+  flagsLoading: boolean;
+  flagsLoadingMore: boolean;
   transactions: Transaction[];
   transactionsHasMore: boolean;
   transactionsLoading: boolean;
   transactionsLoadingMore: boolean;
   reports: ExpenseReport[];
+  reportsHasMore: boolean;
+  reportsLoading: boolean;
+  reportsLoadingMore: boolean;
+  reportsTotalCount: number | null;
   notifications: Notification[];
   assistantMessages: AssistantMessage[];
   assistantSession: AssistantSessionState;
@@ -90,7 +102,11 @@ type MockStore = {
   loadTransactions: () => Promise<void>;
   loadMoreTransactions: () => Promise<void>;
   refreshTransactions: () => Promise<void>;
+  loadFlags: () => Promise<void>;
+  loadMoreFlags: () => Promise<void>;
   refreshFlags: () => Promise<void>;
+  loadReports: () => Promise<void>;
+  loadMoreReports: () => Promise<void>;
   refreshApprovals: () => Promise<void>;
   refreshReports: () => Promise<void>;
   refreshPolicies: () => Promise<void>;
@@ -123,12 +139,22 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [approvals, setApprovals] = useState<ApprovalRequest[]>([]);
   const [flags, setFlags] = useState<TransactionFlag[]>([]);
+  const flagsRef = useRef<TransactionFlag[]>([]);
+  const [flagsHasMore, setFlagsHasMore] = useState(false);
+  const [flagsLoading, setFlagsLoading] = useState(false);
+  const [flagsLoadingMore, setFlagsLoadingMore] = useState(false);
+  const [flagsUnreadCount, setFlagsUnreadCount] = useState(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const transactionsRef = useRef<Transaction[]>([]);
   const [transactionsHasMore, setTransactionsHasMore] = useState(false);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
   const [transactionsLoadingMore, setTransactionsLoadingMore] = useState(false);
   const [reports, setReports] = useState<ExpenseReport[]>([]);
+  const reportsRef = useRef<ExpenseReport[]>([]);
+  const [reportsHasMore, setReportsHasMore] = useState(false);
+  const [reportsLoading, setReportsLoading] = useState(false);
+  const [reportsLoadingMore, setReportsLoadingMore] = useState(false);
+  const [reportsTotalCount, setReportsTotalCount] = useState<number | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const assistant = useAssistantSession();
   const [searchQuery, setSearchQuery] = useState("");
@@ -138,6 +164,32 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     transactionsRef.current = transactions;
   }, [transactions]);
+
+  useEffect(() => {
+    flagsRef.current = flags;
+  }, [flags]);
+
+  useEffect(() => {
+    reportsRef.current = reports;
+  }, [reports]);
+
+  const mergeFlags = useCallback(
+    (prev: TransactionFlag[], incoming: TransactionFlag[]) => {
+      const seen = new Set(prev.map((f) => f.id));
+      const unique = incoming.filter((f) => !seen.has(f.id));
+      return unique.length > 0 ? [...prev, ...unique] : prev;
+    },
+    []
+  );
+
+  const mergeReports = useCallback(
+    (prev: ExpenseReport[], incoming: ExpenseReport[]) => {
+      const seen = new Set(prev.map((r) => r.id));
+      const unique = incoming.filter((r) => !seen.has(r.id));
+      return unique.length > 0 ? [...prev, ...unique] : prev;
+    },
+    []
+  );
 
   const mergeTransactions = useCallback(
     (prev: Transaction[], incoming: Transaction[]) => {
@@ -180,19 +232,81 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
 
   const refreshTransactions = loadTransactions;
 
-  const refreshFlags = useCallback(async () => {
-    const data = await getFlags();
-    setFlags(data);
+  const loadFlags = useCallback(async () => {
+    setFlagsLoading(true);
+    try {
+      const page = await getFlags({
+        limit: FLAGS_PAGE_SIZE,
+        offset: 0,
+      });
+      setFlags(page.items);
+      setFlagsHasMore(page.has_more);
+      setFlagsUnreadCount(page.unread_count);
+    } finally {
+      setFlagsLoading(false);
+    }
   }, []);
+
+  const loadMoreFlags = useCallback(async () => {
+    if (!flagsHasMore || flagsLoadingMore) return;
+    setFlagsLoadingMore(true);
+    const offset = flagsRef.current.length;
+    try {
+      const page = await getFlags({
+        limit: FLAGS_PAGE_SIZE,
+        offset,
+      });
+      setFlags((prev) => mergeFlags(prev, page.items));
+      setFlagsHasMore(page.has_more);
+      setFlagsUnreadCount(page.unread_count);
+    } finally {
+      setFlagsLoadingMore(false);
+    }
+  }, [flagsHasMore, flagsLoadingMore, mergeFlags]);
+
+  const refreshFlags = loadFlags;
+
+  const loadReports = useCallback(async () => {
+    setReportsLoading(true);
+    try {
+      const page = await getReports({
+        limit: REPORTS_PAGE_SIZE,
+        offset: 0,
+      });
+      setReports(page.items);
+      setReportsHasMore(page.has_more);
+      setReportsTotalCount(
+        typeof page.total_count === "number" ? page.total_count : null
+      );
+    } finally {
+      setReportsLoading(false);
+    }
+  }, []);
+
+  const loadMoreReports = useCallback(async () => {
+    if (!reportsHasMore || reportsLoadingMore) return;
+    setReportsLoadingMore(true);
+    const offset = reportsRef.current.length;
+    try {
+      const page = await getReports({
+        limit: REPORTS_PAGE_SIZE,
+        offset,
+      });
+      setReports((prev) => mergeReports(prev, page.items));
+      setReportsHasMore(page.has_more);
+      if (typeof page.total_count === "number") {
+        setReportsTotalCount(page.total_count);
+      }
+    } finally {
+      setReportsLoadingMore(false);
+    }
+  }, [reportsHasMore, reportsLoadingMore, mergeReports]);
+
+  const refreshReports = loadReports;
 
   const refreshApprovals = useCallback(async () => {
     const data = await getApprovals();
     setApprovals(data);
-  }, []);
-
-  const refreshReports = useCallback(async () => {
-    const data = await getReports();
-    setReports(data);
   }, []);
 
   const refreshPolicies = useCallback(async () => {
@@ -210,9 +324,8 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       await Promise.all([
-        refreshFlags(),
+        loadFlags(),
         refreshApprovals(),
-        refreshReports(),
         refreshPolicies(),
         refreshNotifications(),
       ]);
@@ -222,9 +335,8 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     }
   }, [
-    refreshFlags,
+    loadFlags,
     refreshApprovals,
-    refreshReports,
     refreshPolicies,
     refreshNotifications,
   ]);
@@ -238,10 +350,7 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     [approvals]
   );
 
-  const unreadFlagsCount = useMemo(
-    () => flags.filter((f) => !f.reviewed).length,
-    [flags]
-  );
+  const unreadFlagsCount = flagsUnreadCount;
 
   const unreadNotificationsCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
@@ -320,13 +429,16 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     [refreshApprovals, refreshTransactions, refreshNotifications]
   );
 
-  const markFlagReviewed = useCallback(
-    async (id: string) => {
-      await markFlagReviewedApi(id);
-      await refreshFlags();
-    },
-    [refreshFlags]
-  );
+  const markFlagReviewed = useCallback(async (id: string) => {
+    const flag = flagsRef.current.find((f) => f.id === id);
+    await markFlagReviewedApi(id);
+    if (flag && !flag.reviewed) {
+      setFlagsUnreadCount((c) => Math.max(0, c - 1));
+    }
+    setFlags((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, reviewed: true } : f))
+    );
+  }, []);
 
   const runComplianceScan = useCallback(async () => {
     await runComplianceScanApi();
@@ -418,11 +530,18 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     policies,
     approvals,
     flags,
+    flagsHasMore,
+    flagsLoading,
+    flagsLoadingMore,
     transactions,
     transactionsHasMore,
     transactionsLoading,
     transactionsLoadingMore,
     reports,
+    reportsHasMore,
+    reportsLoading,
+    reportsLoadingMore,
+    reportsTotalCount,
     notifications,
     assistantMessages: assistant.session.messages,
     assistantSession: assistant.session,
@@ -447,7 +566,11 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     loadTransactions,
     loadMoreTransactions,
     refreshTransactions,
+    loadFlags,
+    loadMoreFlags,
     refreshFlags,
+    loadReports,
+    loadMoreReports,
     refreshApprovals,
     refreshReports,
     refreshPolicies,

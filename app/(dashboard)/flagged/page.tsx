@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { FlagCard } from "@/components/flagged/flag-card";
 import { Button } from "@/components/ui/button";
@@ -9,14 +9,25 @@ import { useMockStore } from "@/lib/hooks/use-mock-store";
 export default function FlaggedPage() {
   const {
     flags,
+    flagsHasMore,
+    flagsLoading,
+    flagsLoadingMore,
+    unreadFlagsCount,
     markFlagReviewed,
     runComplianceScan,
-    isLoading,
+    loadFlags,
+    loadMoreFlags,
     error,
     refreshAll,
   } = useMockStore();
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+
+  useEffect(() => {
+    if (flags.length === 0 && !flagsLoading) {
+      void loadFlags();
+    }
+  }, [flags.length, flagsLoading, loadFlags]);
 
   const sorted = [...flags].sort((a, b) => b.weight - a.weight);
   const unread = sorted.filter((f) => !f.reviewed);
@@ -46,7 +57,7 @@ export default function FlaggedPage() {
     }
   };
 
-  if (isLoading) {
+  if (flagsLoading && flags.length === 0) {
     return (
       <div className="mx-auto flex max-w-3xl flex-col gap-6">
         <p className="py-8 text-center text-sm text-muted-foreground">Loading flags…</p>
@@ -54,7 +65,7 @@ export default function FlaggedPage() {
     );
   }
 
-  if (error) {
+  if (error && flags.length === 0) {
     return (
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 py-8">
         <p className="text-sm text-destructive">{error}</p>
@@ -73,7 +84,11 @@ export default function FlaggedPage() {
             Flagged transactions
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {unread.length} active flags · sorted by compliance weight
+            {unreadFlagsCount} unreviewed flag{unreadFlagsCount !== 1 ? "s" : ""} total
+            {unread.length > 0
+              ? ` · showing ${unread.length} active in loaded batch`
+              : ""}
+            {flagsHasMore ? " · more available" : ""}
           </p>
         </div>
         <Button
@@ -96,7 +111,7 @@ export default function FlaggedPage() {
         ))}
         {unread.length === 0 && (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            All flags reviewed.
+            All loaded flags reviewed.
           </p>
         )}
       </div>
@@ -112,6 +127,18 @@ export default function FlaggedPage() {
               isSubmitting={submittingId === flag.id}
             />
           ))}
+        </div>
+      )}
+
+      {flagsHasMore && (
+        <div className="flex justify-center pb-4">
+          <Button
+            variant="outline"
+            onClick={() => void loadMoreFlags()}
+            disabled={flagsLoadingMore}
+          >
+            {flagsLoadingMore ? "Loading…" : "Load more"}
+          </Button>
         </div>
       )}
     </div>
