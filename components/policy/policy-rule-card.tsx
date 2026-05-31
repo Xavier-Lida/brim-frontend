@@ -105,16 +105,16 @@ export function PolicyRuleCard({
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Deactivate this rule?</AlertDialogTitle>
+              <AlertDialogTitle>Delete this rule?</AlertDialogTitle>
               <AlertDialogDescription>
-                &ldquo;{policy.policy_name}&rdquo; will be deactivated. Compliance
-                scans will no longer apply this rule.
+                &ldquo;{policy.policy_name}&rdquo; will be permanently removed from
+                Supabase. Use the toggle to disable a rule without deleting it.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={() => onDelete(policy.id)}>
-                Deactivate
+                Delete
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

@@ -26,7 +26,7 @@ export default function PolicyPage() {
   const handleDelete = async (id: string) => {
     try {
       await deletePolicy(id);
-      toast.success("Rule deactivated");
+      toast.success("Rule deleted");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Delete failed");
     }

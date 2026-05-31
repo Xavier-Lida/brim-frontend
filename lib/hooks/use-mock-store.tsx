@@ -257,9 +257,7 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
 
   const deletePolicy = useCallback(async (id: string) => {
     await deletePolicyApi(id);
-    setPolicies((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, active: false } : p))
-    );
+    setPolicies((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
   const addPolicy = useCallback(
