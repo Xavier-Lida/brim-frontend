@@ -8,6 +8,7 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
 
 export type AssistantStreamEvent =
+  | { type: "status"; phase: string; message: string }
   | { type: "text_delta"; delta: string }
   | { type: "visualization"; visualization: Visualization }
   | { type: "follow_up"; suggestions: string[] }
@@ -98,6 +99,10 @@ async function simulateTypingFromResponse(
   response: AssistantResponse,
   onEvent: (event: AssistantStreamEvent) => void
 ): Promise<void> {
+  onEvent({ type: "status", phase: "planning", message: "Analyzing your question…" });
+  await sleep(120);
+  onEvent({ type: "status", phase: "writing", message: "Writing the answer…" });
+  await sleep(120);
   const tokens = response.text.match(/\S+\s*|\s+/g) ?? [response.text];
   for (const token of tokens) {
     onEvent({ type: "text_delta", delta: token });
@@ -129,7 +134,7 @@ export async function askAssistantStream(
   }
 
   try {
-    const response = await askAssistant(question, history, { context });
+    const response = await askAssistant(question, history, { context, signal });
     await simulateTypingFromResponse(response, onEvent);
   } catch (err) {
     const message =

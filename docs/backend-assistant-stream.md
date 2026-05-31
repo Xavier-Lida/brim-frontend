@@ -40,7 +40,7 @@ Response:
   "visualization": {
     "type": "bar",
     "title": "Q2 spend by department",
-    "data": { "labels": [], "values": [] }
+    "data": { "series": [{ "name": "Sales", "value": 256431.43 }] }
   },
   "followUpSuggestions": ["...", "..."],
   "sql": "SELECT ..."
@@ -51,9 +51,12 @@ Response:
 
 ---
 
-## `POST /api/assistant/stream` (new)
+## `POST /api/assistant/stream`
 
-Server-Sent Events endpoint for real-time assistant responses.
+Server-Sent Events endpoint for real-time assistant responses. Implemented in
+`api/routes/assistant.py`. Planning + SQL execution is a blocking prefix; only the
+LLM narration is streamed token-by-token. The mock engine emits its fixed text as a
+single `text_delta`.
 
 ### Request
 
@@ -72,11 +75,17 @@ Body: same as `/api/assistant`.
 Each event is a single SSE `data:` line containing JSON:
 
 ```
-data: {"type":"text_delta","delta":"Here "}
+data: {"type":"status","phase":"loading_data","message":"Loading data…"}
 
-data: {"type":"text_delta","delta":"is your "}
+data: {"type":"status","phase":"planning","message":"Analyzing your question…"}
+
+data: {"type":"status","phase":"running_query","message":"Querying spend data…"}
 
 data: {"type":"visualization","visualization":{"type":"bar","title":"...","data":{...}}}
+
+data: {"type":"status","phase":"writing","message":"Writing the answer…"}
+
+data: {"type":"text_delta","delta":"Here "}
 
 data: {"type":"follow_up","suggestions":["Show flags","Compare Q1"]}
 
@@ -87,18 +96,23 @@ data: {"type":"done"}
 
 | type | payload | UI behavior |
 |---|---|---|
-| `text_delta` | `{ "delta": string }` | Append to streaming assistant bubble |
+| `status` | `{ "phase": string, "message": string }` | Update the single activity line in the streaming bubble (replaced on each event) |
+| `text_delta` | `{ "delta": string }` | Append to streaming assistant bubble; clears activity line |
 | `visualization` | `{ "visualization": Visualization }` | Switch layout to split; render chart in center stage |
 | `follow_up` | `{ "suggestions": string[] }` | Show clickable chips under last message |
 | `done` | — | Finalize message (`streaming: false`) |
 | `error` | `{ "message": string }` | Show error text; finalize message |
 
-### Recommended server order
+Status `phase` values: `loading_data`, `planning`, `running_query`, `repairing_sql`, `writing`, `degraded`. Messages are localized (FR/EN) from the user question language.
 
-1. Stream `text_delta` events (optional if answer is viz-only)
-2. Emit `visualization` when structured data is ready
-3. Emit `follow_up` with 2–4 suggestions
-4. Emit `done`
+### Server event order
+
+1. Emit one or more `status` events during data load, planning, and SQL execution
+2. Emit `visualization` when structured data is ready (omitted for scoped/text-only replies)
+3. Emit `status` with phase `writing` before narration (LLM path only)
+4. Stream `text_delta` events (single chunk for the mock engine; token stream for Gemini)
+5. Emit `follow_up` with up to 3 suggestions
+6. Emit `done` (or `error` then `done` on failure)
 
 ### Context usage
 
@@ -111,13 +125,20 @@ The backend should filter Supabase queries using:
 
 ## Visualization types
 
-| type | `data` shape |
+The backend (`feature1.build_visualization`) owns column selection and emits a
+canonical `data` shape per type. The frontend normalizers consume the canonical
+shape and stay tolerant of legacy payloads during transition.
+
+| type | canonical `data` shape |
 |---|---|
-| `bar` | `{ "labels": string[], "values": number[] }` **or** `Record<string, unknown>[]` (row objects, e.g. `{ "department": "Sales", "total": 256431.43 }`) |
-| `line` | Same as `bar` |
-| `pie` | `{ "segments": { "name": string, "value": number }[] }` **or** row object array |
-| `table` | `{ "columns": string[], "rows": string[][] }` **or** row object array |
+| `bar` | `{ "series": { "name": string, "value": number }[] }` |
+| `line` | `{ "series": { "name": string, "value": number }[] }` |
+| `pie` | `{ "segments": { "name": string, "value": number }[] }` |
+| `table` | `{ "columns": string[], "rows": string[][] }` |
 | `kpi` | `{ "value": string, "label": string, "change"?: string }` |
+
+Legacy shapes still accepted by the normalizers: `{ labels, values }` and row-object
+arrays (`Record<string, unknown>[]`) for `bar`/`line`/`pie`/`table`.
 
 ---
 
@@ -132,18 +153,30 @@ Conversation state is stored in `localStorage` key `brim-assistant-session`:
 
 ---
 
-## FastAPI implementation sketch
+## FastAPI implementation
+
+See `api/routes/assistant.py`. The route builds an answer handler via
+`feature1.prepare_answer(...)` (which runs PLAN + SQL up front), then iterates the
+handler's `.stream()` generator, serializing each event as an SSE `data:` line:
 
 ```python
 from fastapi.responses import StreamingResponse
 
-@app.post("/api/assistant/stream")
-async def assistant_stream(body: AssistantRequest, mock_llm: bool = True):
-    async def event_generator():
-        async for chunk in gemini_stream(body):
-            yield f"data: {json.dumps(chunk)}\n\n"
-        yield f'data: {json.dumps({"type": "done"})}\n\n'
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+def _sse(event: dict) -> str:
+    return f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+
+@router.post("/stream")
+def ask_assistant_stream(body, mock_llm=False, client=Depends(supabase_client)):
+    def event_stream():
+        con, present = build_db_from_supabase(client)
+        try:
+            result = prepare_answer(con, present, question, history, not mock_llm)
+            for event in result.stream():   # visualization -> text_delta* -> follow_up -> done
+                yield _sse(event)
+        finally:
+            con.close()
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 ```
 
-Ensure CORS allows the Next.js origin when calling the API directly from the browser.
+If the LLM planning path raises, the route degrades to the mock engine and logs a
+warning. CORS already allows the Next.js origin (`main.py`).

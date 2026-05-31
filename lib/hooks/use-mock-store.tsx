@@ -476,6 +476,10 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
       assistant.appendUserMessage(trimmed);
       const assistantId = assistant.beginAssistantMessage();
       let accumulated = "";
+      let settled = false;
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 60000);
 
       try {
         await askAssistantStream(
@@ -488,10 +492,16 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
           },
           (event) => {
             switch (event.type) {
+              case "status":
+                assistant.patchAssistantMessage(assistantId, {
+                  activity: event.message,
+                });
+                break;
               case "text_delta":
                 accumulated += event.delta;
                 assistant.patchAssistantMessage(assistantId, {
                   text: accumulated,
+                  activity: undefined,
                   streaming: true,
                 });
                 break;
@@ -506,20 +516,34 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
                 });
                 break;
               case "error":
+                settled = true;
                 assistant.patchAssistantMessage(assistantId, {
                   text: accumulated || event.message,
                   streaming: false,
                 });
                 break;
               case "done":
+                settled = true;
                 assistant.patchAssistantMessage(assistantId, {
                   streaming: false,
                 });
                 break;
             }
-          }
+          },
+          controller.signal
         );
+      } catch {
+        assistant.patchAssistantMessage(assistantId, {
+          text:
+            accumulated ||
+            "La requête a expiré. Réessayez ou reformulez votre question.",
+          streaming: false,
+        });
       } finally {
+        clearTimeout(timeout);
+        if (!settled) {
+          assistant.patchAssistantMessage(assistantId, { streaming: false });
+        }
         assistant.setIsSending(false);
       }
     },

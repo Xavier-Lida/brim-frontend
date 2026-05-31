@@ -88,16 +88,25 @@ export type Notification = {
 
 export type VisualizationType = "bar" | "line" | "pie" | "table" | "kpi";
 
-export type Visualization = {
-  type: VisualizationType;
-  title: string;
-  data: Record<string, unknown>;
-};
+export type SeriesPoint = { name: string; value: number };
+
+// Canonical, server-authoritative shapes. The backend owns column selection so
+// the frontend only renders. Normalizers stay tolerant of legacy payloads.
+export type Visualization =
+  | { type: "bar" | "line"; title: string; data: { series: SeriesPoint[] } }
+  | { type: "pie"; title: string; data: { segments: SeriesPoint[] } }
+  | { type: "table"; title: string; data: { columns: string[]; rows: string[][] } }
+  | {
+      type: "kpi";
+      title: string;
+      data: { value: string; label: string; change?: string };
+    };
 
 export type AssistantMessage = {
   id: string;
   role: "user" | "assistant";
   text: string;
+  activity?: string;
   visualization?: Visualization;
   followUpSuggestions?: string[];
   sql?: string;

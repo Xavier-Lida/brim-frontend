@@ -61,7 +61,7 @@ export function AssistantMessageBubble({
           tabIndex={message.visualization ? 0 : undefined}
         >
           {message.streaming && !message.text ? (
-            <AssistantThinking />
+            <AssistantThinking message={message.activity} />
           ) : message.text ? (
             <AssistantMarkdown content={message.text} />
           ) : (
