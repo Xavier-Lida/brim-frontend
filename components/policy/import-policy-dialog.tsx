@@ -135,7 +135,7 @@ export function ImportPolicyDialog() {
           Import policy
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Import expense policy</DialogTitle>
           <DialogDescription>
@@ -184,33 +184,33 @@ export function ImportPolicyDialog() {
             </DialogFooter>
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="flex min-w-0 flex-col gap-4">
             <p className="text-sm text-muted-foreground">
               Review extracted rules before confirming import.
             </p>
-            <div className="max-h-64 overflow-auto rounded-md border border-border">
-              <Table>
+            <div className="min-w-0 max-h-64 overflow-y-auto rounded-md border border-border">
+              <Table className="table-fixed w-full">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Rule name</TableHead>
-                    <TableHead>Requirements</TableHead>
-                    <TableHead>Effective</TableHead>
+                    <TableHead className="w-[35%]">Rule name</TableHead>
+                    <TableHead className="w-[45%]">Requirements</TableHead>
+                    <TableHead className="w-[20%]">Effective</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {drafts.map((draft, i) => (
                     <TableRow key={i}>
-                      <TableCell>
+                      <TableCell className="min-w-0">
                         <Input
                           value={draft.policy_name}
                           onChange={(e) => updateDraftName(i, e.target.value)}
                           className="h-8"
                         />
                       </TableCell>
-                      <TableCell className="max-w-xs text-xs text-muted-foreground">
+                      <TableCell className="whitespace-normal break-words text-xs text-muted-foreground line-clamp-3">
                         {formatRequirements(draft)}
                       </TableCell>
-                      <TableCell className="text-sm">
+                      <TableCell className="whitespace-nowrap text-sm">
                         {draft.effective_date}
                       </TableCell>
                     </TableRow>
