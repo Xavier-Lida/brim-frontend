@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   CheckCircleIcon,
+  FileTextIcon,
   FlagIcon,
   GearIcon,
   ReceiptIcon,
@@ -32,6 +33,7 @@ const navItems = [
   { title: "Approvals", href: "/approvals", icon: CheckCircleIcon, badge: "approvals" as const },
   { title: "Flagged", href: "/flagged", icon: FlagIcon, badge: "flags" as const },
   { title: "Transactions", href: "/transactions", icon: ReceiptIcon },
+  { title: "Reports", href: "/reports", icon: FileTextIcon },
   { title: "Policy", href: "/policy", icon: ShieldIcon },
   { title: "Settings", href: "/settings", icon: GearIcon },
 ];

@@ -114,3 +114,18 @@ export type ImportedPolicyDraft = {
   scope: string;
   category: PolicyCategory;
 };
+
+export type ExpenseReport = {
+  id: string;
+  employee_id: string;
+  event_group_id: string;
+  title: string;
+  date_from: string;
+  date_to: string;
+  total_amount: number;
+  status: string;
+  pdf_url: string | null;
+  ai_recommendation: AiRecommendation;
+  ai_reasoning: string;
+  created_at?: string;
+};

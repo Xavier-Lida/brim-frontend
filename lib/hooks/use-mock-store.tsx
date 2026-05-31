@@ -4,27 +4,28 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
-import type {
-  ApprovalRequest,
-  ApprovalStatus,
-  AssistantMessage,
-  ImportedPolicyDraft,
-  Notification,
-  Policy,
-  TransactionFlag,
-} from "@/lib/types/brim";
+import {
+  decideApproval as decideApprovalApi,
+  getApprovals,
+  runApprovalsPipeline as runApprovalsPipelineApi,
+} from "@/lib/api/approvals";
+import { runComplianceScan as runComplianceScanApi } from "@/lib/api/compliance";
+import { getFlags, markFlagReviewed as markFlagReviewedApi } from "@/lib/api/flags";
+import {
+  generateReports as generateReportsApi,
+  getReports,
+} from "@/lib/api/reports";
+import { getTransactions } from "@/lib/api/transactions";
 import {
   companySpend,
-  initialApprovals,
   initialAssistantMessages,
-  initialFlags,
   initialNotifications,
   initialPolicies,
-  initialTransactions,
   workspaceUser,
 } from "@/lib/mocks/fixtures";
 import {
@@ -34,23 +35,42 @@ import {
   generateAssistantResponse,
   generateId,
 } from "@/lib/mocks/services";
-import type { PolicyCategory, Transaction } from "@/lib/types/brim";
+import type {
+  ApprovalRequest,
+  ApprovalStatus,
+  AssistantMessage,
+  ExpenseReport,
+  ImportedPolicyDraft,
+  Notification,
+  Policy,
+  PolicyCategory,
+  Transaction,
+  TransactionFlag,
+} from "@/lib/types/brim";
 
 type MockStore = {
   policies: Policy[];
   approvals: ApprovalRequest[];
   flags: TransactionFlag[];
   transactions: Transaction[];
+  reports: ExpenseReport[];
   notifications: Notification[];
   assistantMessages: AssistantMessage[];
   searchQuery: string;
   companySpend: typeof companySpend;
   workspaceUser: typeof workspaceUser;
+  isLoading: boolean;
+  error: string | null;
   pendingApprovalsCount: number;
   unreadFlagsCount: number;
   unreadNotificationsCount: number;
   activePoliciesCount: number;
   setSearchQuery: (query: string) => void;
+  refreshTransactions: () => Promise<void>;
+  refreshFlags: () => Promise<void>;
+  refreshApprovals: () => Promise<void>;
+  refreshReports: () => Promise<void>;
+  refreshAll: () => Promise<void>;
   togglePolicy: (id: string) => void;
   deletePolicy: (id: string) => void;
   addPolicy: (data: {
@@ -63,24 +83,71 @@ type MockStore = {
   }) => void;
   importPolicies: (drafts: ImportedPolicyDraft[]) => void;
   analyzeImport: (content: string) => Promise<ImportedPolicyDraft[]>;
-  decideApproval: (id: string, status: ApprovalStatus) => void;
-  markFlagReviewed: (id: string) => void;
+  decideApproval: (id: string, status: ApprovalStatus) => Promise<void>;
+  markFlagReviewed: (id: string) => Promise<void>;
   markNotificationRead: (id: string) => void;
   sendAssistantMessage: (text: string) => Promise<void>;
+  runComplianceScan: () => Promise<void>;
+  runApprovalsPipeline: () => Promise<void>;
+  generateReports: () => Promise<void>;
 };
 
 const MockStoreContext = createContext<MockStore | null>(null);
 
 export function MockStoreProvider({ children }: { children: ReactNode }) {
   const [policies, setPolicies] = useState(initialPolicies);
-  const [approvals, setApprovals] = useState(initialApprovals);
-  const [flags, setFlags] = useState(initialFlags);
-  const [transactions] = useState(initialTransactions);
+  const [approvals, setApprovals] = useState<ApprovalRequest[]>([]);
+  const [flags, setFlags] = useState<TransactionFlag[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [reports, setReports] = useState<ExpenseReport[]>([]);
   const [notifications, setNotifications] = useState(initialNotifications);
   const [assistantMessages, setAssistantMessages] = useState(
     initialAssistantMessages
   );
   const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refreshTransactions = useCallback(async () => {
+    const data = await getTransactions();
+    setTransactions(data);
+  }, []);
+
+  const refreshFlags = useCallback(async () => {
+    const data = await getFlags();
+    setFlags(data);
+  }, []);
+
+  const refreshApprovals = useCallback(async () => {
+    const data = await getApprovals();
+    setApprovals(data);
+  }, []);
+
+  const refreshReports = useCallback(async () => {
+    const data = await getReports();
+    setReports(data);
+  }, []);
+
+  const refreshAll = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await Promise.all([
+        refreshTransactions(),
+        refreshFlags(),
+        refreshApprovals(),
+        refreshReports(),
+      ]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load data");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [refreshTransactions, refreshFlags, refreshApprovals, refreshReports]);
+
+  useEffect(() => {
+    void refreshAll();
+  }, [refreshAll]);
 
   const pendingApprovalsCount = useMemo(
     () => approvals.filter((a) => a.status === "pending").length,
@@ -138,17 +205,36 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     setPolicies((prev) => [...newPolicies, ...prev]);
   }, []);
 
-  const decideApproval = useCallback((id: string, status: ApprovalStatus) => {
-    setApprovals((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, status } : a))
-    );
-  }, []);
+  const decideApproval = useCallback(
+    async (id: string, status: ApprovalStatus) => {
+      await decideApprovalApi(id, { status });
+      await Promise.all([refreshApprovals(), refreshTransactions()]);
+    },
+    [refreshApprovals, refreshTransactions]
+  );
 
-  const markFlagReviewed = useCallback((id: string) => {
-    setFlags((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, reviewed: true } : f))
-    );
-  }, []);
+  const markFlagReviewed = useCallback(
+    async (id: string) => {
+      await markFlagReviewedApi(id);
+      await refreshFlags();
+    },
+    [refreshFlags]
+  );
+
+  const runComplianceScan = useCallback(async () => {
+    await runComplianceScanApi({ mock_llm: true });
+    await Promise.all([refreshFlags(), refreshTransactions()]);
+  }, [refreshFlags, refreshTransactions]);
+
+  const runApprovalsPipeline = useCallback(async () => {
+    await runApprovalsPipelineApi({ mock_llm: true, send: false });
+    await refreshApprovals();
+  }, [refreshApprovals]);
+
+  const generateReports = useCallback(async () => {
+    await generateReportsApi({}, { mock_llm: true });
+    await refreshReports();
+  }, [refreshReports]);
 
   const markNotificationRead = useCallback((id: string) => {
     setNotifications((prev) =>
@@ -179,16 +265,24 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     approvals,
     flags,
     transactions,
+    reports,
     notifications,
     assistantMessages,
     searchQuery,
     companySpend,
     workspaceUser,
+    isLoading,
+    error,
     pendingApprovalsCount,
     unreadFlagsCount,
     unreadNotificationsCount,
     activePoliciesCount,
     setSearchQuery,
+    refreshTransactions,
+    refreshFlags,
+    refreshApprovals,
+    refreshReports,
+    refreshAll,
     togglePolicy,
     deletePolicy,
     addPolicy,
@@ -198,6 +292,9 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     markFlagReviewed,
     markNotificationRead,
     sendAssistantMessage,
+    runComplianceScan,
+    runApprovalsPipeline,
+    generateReports,
   };
 
   return (

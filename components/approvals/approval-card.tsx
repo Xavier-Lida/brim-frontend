@@ -24,10 +24,15 @@ const recommendationVariant: Record<
 
 type ApprovalCardProps = {
   approval: ApprovalRequest;
-  onDecide: (id: string, status: "approved" | "denied") => void;
+  onDecide: (id: string, status: "approved" | "denied") => void | Promise<void>;
+  isSubmitting?: boolean;
 };
 
-export function ApprovalCard({ approval, onDecide }: ApprovalCardProps) {
+export function ApprovalCard({
+  approval,
+  onDecide,
+  isSubmitting = false,
+}: ApprovalCardProps) {
   const isPending = approval.status === "pending";
 
   return (
@@ -86,12 +91,16 @@ export function ApprovalCard({ approval, onDecide }: ApprovalCardProps) {
         <CardFooter className="gap-2">
           <Button
             variant="outline"
-            onClick={() => onDecide(approval.id, "denied")}
+            onClick={() => void onDecide(approval.id, "denied")}
+            disabled={isSubmitting}
           >
             Deny
           </Button>
-          <Button onClick={() => onDecide(approval.id, "approved")}>
-            Approve
+          <Button
+            onClick={() => void onDecide(approval.id, "approved")}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Saving…" : "Approve"}
           </Button>
         </CardFooter>
       )}

@@ -1,34 +1,98 @@
 "use client";
 
+import { useState } from "react";
 import { toast } from "sonner";
 import { FlagCard } from "@/components/flagged/flag-card";
+import { Button } from "@/components/ui/button";
 import { useMockStore } from "@/lib/hooks/use-mock-store";
 
 export default function FlaggedPage() {
-  const { flags, markFlagReviewed } = useMockStore();
+  const {
+    flags,
+    markFlagReviewed,
+    runComplianceScan,
+    isLoading,
+    error,
+    refreshAll,
+  } = useMockStore();
+  const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+
   const sorted = [...flags].sort((a, b) => b.weight - a.weight);
   const unread = sorted.filter((f) => !f.reviewed);
   const reviewed = sorted.filter((f) => f.reviewed);
 
-  const handleReview = (id: string) => {
-    markFlagReviewed(id);
-    toast.success("Flag marked as reviewed");
+  const handleReview = async (id: string) => {
+    setSubmittingId(id);
+    try {
+      await markFlagReviewed(id);
+      toast.success("Flag marked as reviewed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to mark flag reviewed");
+    } finally {
+      setSubmittingId(null);
+    }
   };
+
+  const handleScan = async () => {
+    setIsScanning(true);
+    try {
+      await runComplianceScan();
+      toast.success("Compliance scan completed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to run compliance scan");
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto flex max-w-3xl flex-col gap-6">
+        <p className="py-8 text-center text-sm text-muted-foreground">Loading flags…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 py-8">
+        <p className="text-sm text-destructive">{error}</p>
+        <Button variant="outline" onClick={() => void refreshAll()}>
+          Retry
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      <div>
-        <h2 className="text-xl font-normal text-foreground/90">
-          Flagged transactions
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {unread.length} active flags · sorted by compliance weight
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-normal text-foreground/90">
+            Flagged transactions
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {unread.length} active flags · sorted by compliance weight
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => void handleScan()}
+          disabled={isScanning}
+        >
+          {isScanning ? "Scanning…" : "Run compliance scan"}
+        </Button>
       </div>
 
       <div className="flex flex-col gap-4">
         {unread.map((flag) => (
-          <FlagCard key={flag.id} flag={flag} onReview={handleReview} />
+          <FlagCard
+            key={flag.id}
+            flag={flag}
+            onReview={handleReview}
+            isSubmitting={submittingId === flag.id}
+          />
         ))}
         {unread.length === 0 && (
           <p className="py-8 text-center text-sm text-muted-foreground">
@@ -41,7 +105,12 @@ export default function FlaggedPage() {
         <div className="flex flex-col gap-4">
           <h3 className="text-sm font-medium text-muted-foreground">Reviewed</h3>
           {reviewed.map((flag) => (
-            <FlagCard key={flag.id} flag={flag} onReview={handleReview} />
+            <FlagCard
+              key={flag.id}
+              flag={flag}
+              onReview={handleReview}
+              isSubmitting={submittingId === flag.id}
+            />
           ))}
         </div>
       )}

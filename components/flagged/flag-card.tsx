@@ -12,11 +12,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { TransactionFlag } from "@/lib/types/brim";
-import { useMockStore } from "@/lib/hooks/use-mock-store";
 
 type FlagCardProps = {
   flag: TransactionFlag;
-  onReview: (id: string) => void;
+  onReview: (id: string) => void | Promise<void>;
+  isSubmitting?: boolean;
 };
 
 function weightVariant(weight: number): "secondary" | "destructive" | "outline" {
@@ -25,9 +25,12 @@ function weightVariant(weight: number): "secondary" | "destructive" | "outline" 
   return "secondary";
 }
 
-export function FlagCard({ flag, onReview }: FlagCardProps) {
-  const { transactions } = useMockStore();
-  const txn = transactions.find((t) => t.id === flag.transaction_id);
+export function FlagCard({
+  flag,
+  onReview,
+  isSubmitting = false,
+}: FlagCardProps) {
+  const txn = flag.transaction;
 
   return (
     <Card className="border-border/50 shadow-none">
@@ -35,7 +38,7 @@ export function FlagCard({ flag, onReview }: FlagCardProps) {
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <CardTitle className="text-base font-medium">
-              {flag.employee_name ?? "Unknown employee"}
+              {flag.employee_name ?? txn?.employee_name ?? "Unknown employee"}
             </CardTitle>
             <CardDescription>
               {txn?.merchant_name ?? flag.transaction_id} · $
@@ -60,8 +63,12 @@ export function FlagCard({ flag, onReview }: FlagCardProps) {
       </CardContent>
       {!flag.reviewed && (
         <CardFooter>
-          <Button variant="outline" onClick={() => onReview(flag.id)}>
-            Mark reviewed
+          <Button
+            variant="outline"
+            onClick={() => void onReview(flag.id)}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Saving…" : "Mark reviewed"}
           </Button>
         </CardFooter>
       )}
