@@ -27,6 +27,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Visualization } from "@/lib/types/brim";
+import {
+  normalizeKpiData,
+  normalizePieChartData,
+  normalizeSeriesChartData,
+  normalizeTableData,
+} from "@/lib/assistant/normalize-visualization-data";
+import { cn } from "@/lib/utils";
 
 const chartConfig = {
   value: { label: "Amount", color: "var(--chart-1)" },
@@ -42,23 +49,38 @@ const pieColors = [
 
 type AssistantVisualizationProps = {
   visualization: Visualization;
+  size?: "default" | "stage";
 };
 
 export function AssistantVisualization({
   visualization,
+  size = "default",
 }: AssistantVisualizationProps) {
   const { type, title, data } = visualization;
+  const chartHeight = size === "stage" ? "h-80 md:h-96" : "h-48";
+  const kpiValueClass =
+    size === "stage" ? "text-4xl md:text-5xl" : "text-2xl";
+  const wrapperClass =
+    size === "stage"
+      ? "rounded-xl border border-border/50 bg-card p-6 md:p-8"
+      : "rounded-xl border border-border/50 bg-card p-4";
+
+  const emptyState = (
+    <div className={wrapperClass}>
+      <p className="text-sm font-normal text-muted-foreground">{title}</p>
+      <p className="mt-3 text-sm text-muted-foreground">
+        Chart data is unavailable for this response.
+      </p>
+    </div>
+  );
 
   if (type === "kpi") {
-    const kpiData = data as {
-      value: string;
-      label: string;
-      change?: string;
-    };
+    const kpiData = normalizeKpiData(data);
+    if (!kpiData) return emptyState;
     return (
-      <div className="rounded-xl border border-border/50 bg-card p-4">
+      <div className={wrapperClass}>
         <p className="text-xs font-normal text-muted-foreground">{title}</p>
-        <p className="mt-1 text-2xl font-normal text-primary/80">
+        <p className={cn("mt-2 font-normal text-primary/80", kpiValueClass)}>
           {kpiData.value}
         </p>
         <p className="text-sm text-muted-foreground">{kpiData.label}</p>
@@ -70,13 +92,11 @@ export function AssistantVisualization({
   }
 
   if (type === "table") {
-    const tableData = data as {
-      columns: string[];
-      rows: string[][];
-    };
+    const tableData = normalizeTableData(data);
+    if (tableData.columns.length === 0) return emptyState;
     return (
-      <div className="rounded-xl border border-border/50">
-        <p className="border-b border-border/40 px-4 py-2 text-xs font-normal text-muted-foreground">
+      <div className={cn(wrapperClass, "overflow-hidden p-0")}>
+        <p className="border-b border-border/40 px-4 py-3 text-xs font-normal text-muted-foreground">
           {title}
         </p>
         <Table>
@@ -102,15 +122,15 @@ export function AssistantVisualization({
   }
 
   if (type === "bar") {
-    const barData = data as { labels: string[]; values: number[] };
-    const chartData = barData.labels.map((label, i) => ({
-      name: label,
-      spend: barData.values[i],
+    const chartData = normalizeSeriesChartData(data).map(({ name, value }) => ({
+      name,
+      spend: value,
     }));
+    if (chartData.length === 0) return emptyState;
     return (
-      <div className="rounded-xl border border-border/50 bg-card p-4">
-        <p className="mb-3 text-xs font-normal text-muted-foreground">{title}</p>
-        <ChartContainer config={chartConfig} className="h-48 w-full">
+      <div className={wrapperClass}>
+        <p className="mb-4 text-sm font-normal text-muted-foreground">{title}</p>
+        <ChartContainer config={chartConfig} className={cn(chartHeight, "w-full")}>
           <BarChart data={chartData}>
             <CartesianGrid vertical={false} />
             <XAxis dataKey="name" tickLine={false} axisLine={false} />
@@ -124,15 +144,12 @@ export function AssistantVisualization({
   }
 
   if (type === "line") {
-    const lineData = data as { labels: string[]; values: number[] };
-    const chartData = lineData.labels.map((label, i) => ({
-      name: label,
-      value: lineData.values[i],
-    }));
+    const chartData = normalizeSeriesChartData(data);
+    if (chartData.length === 0) return emptyState;
     return (
-      <div className="rounded-xl border border-border/50 bg-card p-4">
-        <p className="mb-3 text-xs font-normal text-muted-foreground">{title}</p>
-        <ChartContainer config={chartConfig} className="h-48 w-full">
+      <div className={wrapperClass}>
+        <p className="mb-4 text-sm font-normal text-muted-foreground">{title}</p>
+        <ChartContainer config={chartConfig} className={cn(chartHeight, "w-full")}>
           <LineChart data={chartData}>
             <CartesianGrid vertical={false} />
             <XAxis dataKey="name" tickLine={false} axisLine={false} />
@@ -152,24 +169,30 @@ export function AssistantVisualization({
   }
 
   if (type === "pie") {
-    const pieData = data as {
-      segments: { name: string; value: number }[];
-    };
+    const segments = normalizePieChartData(data);
+    if (segments.length === 0) return emptyState;
     return (
-      <div className="rounded-xl border border-border/50 bg-card p-4">
-        <p className="mb-3 text-xs font-normal text-muted-foreground">{title}</p>
-        <ChartContainer config={chartConfig} className="mx-auto h-48 w-full max-w-xs">
+      <div className={wrapperClass}>
+        <p className="mb-4 text-sm font-normal text-muted-foreground">{title}</p>
+        <ChartContainer
+          config={chartConfig}
+          className={cn(
+            chartHeight,
+            "mx-auto w-full",
+            size === "stage" ? "max-w-lg" : "max-w-xs"
+          )}
+        >
           <PieChart>
             <ChartTooltip content={<ChartTooltipContent />} />
             <Pie
-              data={pieData.segments}
+              data={segments}
               dataKey="value"
               nameKey="name"
               cx="50%"
               cy="50%"
               outerRadius={70}
             >
-              {pieData.segments.map((_, i) => (
+              {segments.map((_, i) => (
                 <Cell key={i} fill={pieColors[i % pieColors.length]} />
               ))}
             </Pie>

@@ -93,7 +93,26 @@ export type AssistantMessage = {
   visualization?: Visualization;
   followUpSuggestions?: string[];
   sql?: string;
+  streaming?: boolean;
   created_at: string;
+};
+
+export type AssistantDatePreset = "q2" | "last_30d" | "this_month";
+
+export type AssistantContext = {
+  preset: AssistantDatePreset;
+  date_from: string;
+  date_to: string;
+  departments: string[];
+};
+
+export type AssistantLayoutMode = "centered" | "split";
+
+export type AssistantSessionState = {
+  messages: AssistantMessage[];
+  context: AssistantContext;
+  layoutMode: AssistantLayoutMode;
+  activeVisualizationId?: string;
 };
 
 export type WorkspaceUser = {

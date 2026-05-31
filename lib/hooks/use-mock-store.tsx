@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { askAssistant } from "@/lib/api/assistant";
+import { askAssistantStream } from "@/lib/api/assistant-stream";
 import {
   decideApproval as decideApprovalApi,
   getApprovals,
@@ -37,14 +37,15 @@ import {
 import { getTransactions, TRANSACTIONS_PAGE_SIZE } from "@/lib/api/transactions";
 import {
   companySpend,
-  initialAssistantMessages,
   workspaceUser,
 } from "@/lib/mocks/fixtures";
-import { generateId } from "@/lib/mocks/services";
+import { useAssistantSession } from "@/lib/hooks/use-assistant-session";
 import type {
   ApprovalRequest,
   ApprovalStatus,
+  AssistantDatePreset,
   AssistantMessage,
+  AssistantSessionState,
   ExpenseReport,
   Notification,
   Policy,
@@ -52,6 +53,7 @@ import type {
   PolicyRequirements,
   Transaction,
   TransactionFlag,
+  Visualization,
 } from "@/lib/types/brim";
 
 type MockStore = {
@@ -65,6 +67,15 @@ type MockStore = {
   reports: ExpenseReport[];
   notifications: Notification[];
   assistantMessages: AssistantMessage[];
+  assistantSession: AssistantSessionState;
+  assistantActiveVisualization?: Visualization;
+  assistantIsSending: boolean;
+  assistantVizFullscreenOpen: boolean;
+  setAssistantVizFullscreenOpen: (open: boolean) => void;
+  setAssistantContextPreset: (preset: AssistantDatePreset) => void;
+  setAssistantDepartments: (departments: string[]) => void;
+  clearAssistantChat: () => void;
+  selectAssistantVisualization: (messageId: string) => void;
   searchQuery: string;
   companySpend: typeof companySpend;
   workspaceUser: typeof workspaceUser;
@@ -118,9 +129,7 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
   const [transactionsLoadingMore, setTransactionsLoadingMore] = useState(false);
   const [reports, setReports] = useState<ExpenseReport[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [assistantMessages, setAssistantMessages] = useState(
-    initialAssistantMessages
-  );
+  const assistant = useAssistantSession();
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -333,41 +342,65 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  const sendAssistantMessage = useCallback(async (text: string) => {
-    const userMessage: AssistantMessage = {
-      id: generateId("msg"),
-      role: "user",
-      text,
-      created_at: new Date().toISOString(),
-    };
-    setAssistantMessages((prev) => [...prev, userMessage]);
+  const sendAssistantMessage = useCallback(
+    async (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed || assistant.isSending) return;
 
-    const history = assistantMessages
-      .filter((m) => m.role === "user" || m.role === "assistant")
-      .slice(-6)
-      .reduce<{ question: string; summary: string }[]>((acc, msg, idx, arr) => {
-        if (msg.role === "user") {
-          const next = arr[idx + 1];
-          acc.push({
-            question: msg.text,
-            summary: next?.role === "assistant" ? next.text : "",
-          });
-        }
-        return acc;
-      }, []);
+      assistant.setIsSending(true);
+      const history = assistant.buildHistory(assistant.session.messages);
+      assistant.appendUserMessage(trimmed);
+      const assistantId = assistant.beginAssistantMessage();
+      let accumulated = "";
 
-    const response = await askAssistant(text, history);
-    const assistantMessage: AssistantMessage = {
-      id: generateId("msg"),
-      role: "assistant",
-      text: response.text,
-      visualization: response.visualization,
-      followUpSuggestions: response.followUpSuggestions,
-      sql: response.sql,
-      created_at: new Date().toISOString(),
-    };
-    setAssistantMessages((prev) => [...prev, assistantMessage]);
-  }, [assistantMessages]);
+      try {
+        await askAssistantStream(
+          trimmed,
+          history,
+          {
+            date_from: assistant.session.context.date_from,
+            date_to: assistant.session.context.date_to,
+            departments: assistant.session.context.departments,
+          },
+          (event) => {
+            switch (event.type) {
+              case "text_delta":
+                accumulated += event.delta;
+                assistant.patchAssistantMessage(assistantId, {
+                  text: accumulated,
+                  streaming: true,
+                });
+                break;
+              case "visualization":
+                assistant.patchAssistantMessage(assistantId, {
+                  visualization: event.visualization,
+                });
+                break;
+              case "follow_up":
+                assistant.patchAssistantMessage(assistantId, {
+                  followUpSuggestions: event.suggestions,
+                });
+                break;
+              case "error":
+                assistant.patchAssistantMessage(assistantId, {
+                  text: accumulated || event.message,
+                  streaming: false,
+                });
+                break;
+              case "done":
+                assistant.patchAssistantMessage(assistantId, {
+                  streaming: false,
+                });
+                break;
+            }
+          }
+        );
+      } finally {
+        assistant.setIsSending(false);
+      }
+    },
+    [assistant]
+  );
 
   const value: MockStore = {
     policies,
@@ -379,7 +412,16 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     transactionsLoadingMore,
     reports,
     notifications,
-    assistantMessages,
+    assistantMessages: assistant.session.messages,
+    assistantSession: assistant.session,
+    assistantActiveVisualization: assistant.activeVisualization,
+    assistantIsSending: assistant.isSending,
+    assistantVizFullscreenOpen: assistant.vizFullscreenOpen,
+    setAssistantVizFullscreenOpen: assistant.setVizFullscreenOpen,
+    setAssistantContextPreset: assistant.setContextPreset,
+    setAssistantDepartments: assistant.setDepartments,
+    clearAssistantChat: assistant.clearChat,
+    selectAssistantVisualization: assistant.selectVisualization,
     searchQuery,
     companySpend,
     workspaceUser,
