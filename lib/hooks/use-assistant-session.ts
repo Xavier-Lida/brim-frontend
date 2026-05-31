@@ -151,7 +151,7 @@ export function useAssistantSession() {
       patch: Partial<
         Pick<
           AssistantMessage,
-          "text" | "visualization" | "followUpSuggestions" | "streaming"
+          "text" | "activity" | "visualization" | "followUpSuggestions" | "streaming"
         >
       >
     ) => {

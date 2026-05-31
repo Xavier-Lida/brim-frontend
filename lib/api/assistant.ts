@@ -22,11 +22,16 @@ export type AssistantResponse = Omit<
 export async function askAssistant(
   question: string,
   history: AssistantHistoryTurn[] = [],
-  options?: { mock_llm?: boolean; context?: AssistantRequestContext }
+  options?: {
+    mock_llm?: boolean;
+    context?: AssistantRequestContext;
+    signal?: AbortSignal;
+  }
 ): Promise<AssistantResponse> {
   return apiFetch<AssistantResponse>("/api/assistant", {
     method: "POST",
     params: { mock_llm: options?.mock_llm ?? mockLlm },
+    signal: options?.signal,
     body: {
       question,
       history,

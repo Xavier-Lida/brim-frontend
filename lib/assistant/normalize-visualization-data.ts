@@ -70,7 +70,23 @@ function normalizeFromRecordRows(data: unknown): ChartPoint[] {
     .filter((point): point is ChartPoint => point !== null);
 }
 
+// Canonical, server-authoritative shape: { series: [{ name, value }] }
+function normalizeFromSeries(data: unknown): ChartPoint[] {
+  if (!isRecord(data) || !Array.isArray(data.series)) return [];
+  return data.series
+    .map((point) => {
+      if (!isRecord(point)) return null;
+      const value = Number(point.value);
+      if (!Number.isFinite(value)) return null;
+      return { name: String(point.name ?? ""), value };
+    })
+    .filter((point): point is ChartPoint => point !== null);
+}
+
 export function normalizeSeriesChartData(data: unknown): ChartPoint[] {
+  const fromSeries = normalizeFromSeries(data);
+  if (fromSeries.length > 0) return fromSeries;
+  // Legacy tolerance: { labels, values } or array-of-row-objects.
   const fromLabels = normalizeFromLabelsValues(data);
   if (fromLabels.length > 0) return fromLabels;
   return normalizeFromRecordRows(data);
