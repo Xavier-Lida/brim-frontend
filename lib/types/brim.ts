@@ -62,6 +62,15 @@ export type ApprovalStatus = "pending" | "approved" | "denied";
 
 export type AiRecommendation = "approve" | "review" | "deny";
 
+export type PolicyCheckStatus = "passed" | "failed";
+
+export type PolicyCheck = {
+  policy_id: string;
+  policy_name: string;
+  status: PolicyCheckStatus;
+  message?: string;
+};
+
 export type ApprovalRequest = {
   id: string;
   transaction_id: string;
@@ -75,6 +84,8 @@ export type ApprovalRequest = {
   status: ApprovalStatus;
   department_budget_remaining: number;
   recent_expenses: { date: string; merchant: string; amount: number }[];
+  policy_checks?: PolicyCheck[];
+  policy_violation_summary?: string;
 };
 
 export type Notification = {
@@ -187,4 +198,12 @@ export type ReportsPage = {
   limit: number;
   offset: number;
   total_count?: number;
+};
+
+export type ApprovalsPage = {
+  items: ApprovalRequest[];
+  has_more: boolean;
+  limit: number;
+  offset: number;
+  pending_count: number;
 };

@@ -1,9 +1,56 @@
 import type {
+  ApprovalRequest,
+  ApprovalsPage,
   ExpenseReport,
   FlagsPage,
   ReportsPage,
   TransactionFlag,
 } from "@/lib/types/brim";
+import { normalizeApprovalRequest } from "@/lib/approvals/display";
+
+function normalizeApprovalItems(items: ApprovalRequest[]): ApprovalRequest[] {
+  return items.map(normalizeApprovalRequest);
+}
+
+function sortApprovals(all: ApprovalRequest[]): ApprovalRequest[] {
+  return [...all].sort((a, b) => {
+    const aPending = a.status === "pending" ? 0 : 1;
+    const bPending = b.status === "pending" ? 0 : 1;
+    return aPending - bPending;
+  });
+}
+
+/** Normalize legacy array responses until backend returns paginated JSON. */
+export function normalizeApprovalsPage(
+  data: unknown,
+  limit: number,
+  offset: number
+): ApprovalsPage {
+  if (Array.isArray(data)) {
+    const sorted = sortApprovals(normalizeApprovalItems(data as ApprovalRequest[]));
+    const pending_count = sorted.filter((a) => a.status === "pending").length;
+    const items = sorted.slice(offset, offset + limit);
+    return {
+      items,
+      has_more: offset + items.length < sorted.length,
+      limit,
+      offset,
+      pending_count,
+    };
+  }
+  const page = data as ApprovalsPage;
+  const items = normalizeApprovalItems(page.items ?? []);
+  return {
+    items,
+    has_more: Boolean(page.has_more),
+    limit: page.limit ?? limit,
+    offset: page.offset ?? offset,
+    pending_count:
+      typeof page.pending_count === "number"
+        ? page.pending_count
+        : items.filter((a) => a.status === "pending").length,
+  };
+}
 
 /** Normalize legacy array responses until backend returns paginated JSON. */
 export function normalizeFlagsPage(

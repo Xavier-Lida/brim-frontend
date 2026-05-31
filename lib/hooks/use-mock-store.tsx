@@ -13,6 +13,7 @@ import {
 import { askAssistantStream } from "@/lib/api/assistant-stream";
 import { createAssistantStreamHandler } from "@/lib/hooks/assistant-stream-handler";
 import {
+  APPROVALS_PAGE_SIZE,
   decideApproval as decideApprovalApi,
   getApprovals,
   runApprovalsPipeline as runApprovalsPipelineApi,
@@ -66,6 +67,9 @@ import type {
 type MockStore = {
   policies: Policy[];
   approvals: ApprovalRequest[];
+  approvalsHasMore: boolean;
+  approvalsLoading: boolean;
+  approvalsLoadingMore: boolean;
   flags: TransactionFlag[];
   flagsHasMore: boolean;
   flagsLoading: boolean;
@@ -108,6 +112,8 @@ type MockStore = {
   refreshFlags: () => Promise<void>;
   loadReports: () => Promise<void>;
   loadMoreReports: () => Promise<void>;
+  loadApprovals: () => Promise<void>;
+  loadMoreApprovals: () => Promise<void>;
   refreshApprovals: () => Promise<void>;
   refreshReports: () => Promise<void>;
   refreshPolicies: () => Promise<void>;
@@ -139,6 +145,11 @@ const MockStoreContext = createContext<MockStore | null>(null);
 export function MockStoreProvider({ children }: { children: ReactNode }) {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [approvals, setApprovals] = useState<ApprovalRequest[]>([]);
+  const approvalsRef = useRef<ApprovalRequest[]>([]);
+  const [approvalsHasMore, setApprovalsHasMore] = useState(false);
+  const [approvalsLoading, setApprovalsLoading] = useState(false);
+  const [approvalsLoadingMore, setApprovalsLoadingMore] = useState(false);
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
   const [flags, setFlags] = useState<TransactionFlag[]>([]);
   const flagsRef = useRef<TransactionFlag[]>([]);
   const [flagsHasMore, setFlagsHasMore] = useState(false);
@@ -173,6 +184,19 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     reportsRef.current = reports;
   }, [reports]);
+
+  useEffect(() => {
+    approvalsRef.current = approvals;
+  }, [approvals]);
+
+  const mergeApprovals = useCallback(
+    (prev: ApprovalRequest[], incoming: ApprovalRequest[]) => {
+      const seen = new Set(prev.map((a) => a.id));
+      const unique = incoming.filter((a) => !seen.has(a.id));
+      return unique.length > 0 ? [...prev, ...unique] : prev;
+    },
+    []
+  );
 
   const mergeFlags = useCallback(
     (prev: TransactionFlag[], incoming: TransactionFlag[]) => {
@@ -305,10 +329,39 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
 
   const refreshReports = loadReports;
 
-  const refreshApprovals = useCallback(async () => {
-    const data = await getApprovals();
-    setApprovals(data);
+  const loadApprovals = useCallback(async () => {
+    setApprovalsLoading(true);
+    try {
+      const page = await getApprovals({
+        limit: APPROVALS_PAGE_SIZE,
+        offset: 0,
+      });
+      setApprovals(page.items);
+      setApprovalsHasMore(page.has_more);
+      setPendingApprovalsCount(page.pending_count);
+    } finally {
+      setApprovalsLoading(false);
+    }
   }, []);
+
+  const loadMoreApprovals = useCallback(async () => {
+    if (!approvalsHasMore || approvalsLoadingMore) return;
+    setApprovalsLoadingMore(true);
+    const offset = approvalsRef.current.length;
+    try {
+      const page = await getApprovals({
+        limit: APPROVALS_PAGE_SIZE,
+        offset,
+      });
+      setApprovals((prev) => mergeApprovals(prev, page.items));
+      setApprovalsHasMore(page.has_more);
+      setPendingApprovalsCount(page.pending_count);
+    } finally {
+      setApprovalsLoadingMore(false);
+    }
+  }, [approvalsHasMore, approvalsLoadingMore, mergeApprovals]);
+
+  const refreshApprovals = loadApprovals;
 
   const refreshPolicies = useCallback(async () => {
     const data = await getPolicies();
@@ -326,7 +379,7 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     try {
       await Promise.all([
         loadFlags(),
-        refreshApprovals(),
+        loadApprovals(),
         refreshPolicies(),
         refreshNotifications(),
       ]);
@@ -337,7 +390,7 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     }
   }, [
     loadFlags,
-    refreshApprovals,
+    loadApprovals,
     refreshPolicies,
     refreshNotifications,
   ]);
@@ -345,11 +398,6 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refreshAll();
   }, [refreshAll]);
-
-  const pendingApprovalsCount = useMemo(
-    () => approvals.filter((a) => a.status === "pending").length,
-    [approvals]
-  );
 
   const unreadFlagsCount = flagsUnreadCount;
 
@@ -522,6 +570,9 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
   const value: MockStore = {
     policies,
     approvals,
+    approvalsHasMore,
+    approvalsLoading,
+    approvalsLoadingMore,
     flags,
     flagsHasMore,
     flagsLoading,
@@ -564,6 +615,8 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     refreshFlags,
     loadReports,
     loadMoreReports,
+    loadApprovals,
+    loadMoreApprovals,
     refreshApprovals,
     refreshReports,
     refreshPolicies,

@@ -358,6 +358,30 @@ export const initialApprovals: ApprovalRequest[] = [
       { date: "2026-05-20", merchant: "GitHub Copilot", amount: 189.99 },
       { date: "2026-05-10", merchant: "Figma", amount: 15.0 },
     ],
+    policy_checks: [
+      {
+        policy_id: "pol-default-meals",
+        policy_name: "Meal limits",
+        status: "passed",
+      },
+      {
+        policy_id: "pol-default-approval",
+        policy_name: "Pre-approval threshold",
+        status: "failed",
+        message: "Amount $649.99 exceeds $500 CAD threshold.",
+      },
+      {
+        policy_id: "pol-restricted-bars",
+        policy_name: "Restricted merchants",
+        status: "passed",
+      },
+      {
+        policy_id: "pol-budget",
+        policy_name: "Department budget",
+        status: "passed",
+        message: "$12,400 remaining in Engineering budget.",
+      },
+    ],
   },
   {
     id: "apr-2",
@@ -376,6 +400,30 @@ export const initialApprovals: ApprovalRequest[] = [
       { date: "2026-05-23", merchant: "Best Buy", amount: 520.0 },
       { date: "2026-05-18", merchant: "TechConf 2026", amount: 1100.0 },
       { date: "2026-05-05", merchant: "Notion", amount: 10.0 },
+    ],
+    policy_checks: [
+      {
+        policy_id: "pol-default-meals",
+        policy_name: "Meal limits",
+        status: "passed",
+      },
+      {
+        policy_id: "pol-default-approval",
+        policy_name: "Pre-approval threshold",
+        status: "passed",
+        message: "Manager pre-approval on file for $520 purchase.",
+      },
+      {
+        policy_id: "pol-restricted-bars",
+        policy_name: "Restricted merchants",
+        status: "passed",
+      },
+      {
+        policy_id: "pol-budget",
+        policy_name: "Department budget",
+        status: "passed",
+        message: "$8,900 remaining in Product budget.",
+      },
     ],
   },
   {
@@ -396,6 +444,31 @@ export const initialApprovals: ApprovalRequest[] = [
       { date: "2026-05-22", merchant: "Panera Bread", amount: 67.2 },
       { date: "2026-05-17", merchant: "Dunkin", amount: 43.5 },
     ],
+    policy_checks: [
+      {
+        policy_id: "pol-default-meals",
+        policy_name: "Meal limits",
+        status: "passed",
+      },
+      {
+        policy_id: "pol-default-approval",
+        policy_name: "Pre-approval threshold",
+        status: "failed",
+        message: "Amount $1,240 exceeds $500 CAD threshold.",
+      },
+      {
+        policy_id: "pol-travel",
+        policy_name: "Travel completeness",
+        status: "failed",
+        message: "Travel costs not yet submitted for full event estimate.",
+      },
+      {
+        policy_id: "pol-budget",
+        policy_name: "Department budget",
+        status: "passed",
+        message: "$5,600 remaining in Marketing budget.",
+      },
+    ],
   },
   {
     id: "apr-4",
@@ -414,6 +487,30 @@ export const initialApprovals: ApprovalRequest[] = [
       { date: "2026-05-16", merchant: "Four Seasons", amount: 2750.0 },
       { date: "2026-05-22", merchant: "Southwest Airlines", amount: 234.5 },
       { date: "2026-05-24", merchant: "Marriott", amount: 890.0 },
+    ],
+    policy_checks: [
+      {
+        policy_id: "pol-default-meals",
+        policy_name: "Meal limits",
+        status: "passed",
+      },
+      {
+        policy_id: "pol-default-approval",
+        policy_name: "Pre-approval threshold",
+        status: "failed",
+        message: "Amount $2,750 exceeds $500 CAD threshold.",
+      },
+      {
+        policy_id: "pol-restricted-bars",
+        policy_name: "Restricted merchants",
+        status: "passed",
+      },
+      {
+        policy_id: "pol-budget",
+        policy_name: "Department budget",
+        status: "failed",
+        message: "Combined trip spend exceeds $3,000 limit.",
+      },
     ],
   },
 ];
