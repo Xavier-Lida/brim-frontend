@@ -40,7 +40,7 @@ export function AssistantMessageBubble({
   if (isUser) {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[90%] rounded-lg bg-primary/70 px-3 py-2 text-sm text-primary-foreground">
+        <div className="max-w-[90%] rounded-[18px] bg-hope-blue px-4 py-2.5 text-sm text-white shadow-[rgba(154,207,246,0.5)_0px_5px_0px_0px]">
           {message.text}
         </div>
       </div>
@@ -49,16 +49,16 @@ export function AssistantMessageBubble({
 
   return (
     <div className="flex gap-2">
-      <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">
+      <div className="flex size-7 shrink-0 items-center justify-center rounded-[10px] bg-hope-blue/15 text-hope-blue">
         <SparkleIcon weight="fill" className="size-3.5" />
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div
           className={cn(
-            "rounded-lg border border-border/40 bg-blue-soft/50 px-3 py-2",
+            "rounded-[18px] border border-dim-gray/30 bg-arctic-mist px-4 py-3 shadow-[rgba(0,0,0,0.05)_0px_3px_0px_0px]",
             message.visualization &&
               onSelectVisualization &&
-              "cursor-pointer transition-colors hover:bg-blue-soft",
+              "cursor-pointer transition-all hover:shadow-[rgba(154,207,246,0.4)_0px_5px_0px_0px] hover:border-primary/30",
             isActiveVisualization && "ring-1 ring-primary/30"
           )}
           onClick={

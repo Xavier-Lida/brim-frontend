@@ -10,15 +10,15 @@ export function CompanySpendCard() {
   const budgetLabel = `$${(companySpend.budget / 1000).toFixed(0)}k`;
 
   return (
-    <div className="rounded-xl border border-border/50 bg-blue-soft/40 p-3">
-      <p className="text-xs text-muted-foreground">
+    <div className="rounded-[14px] border border-sidebar-border bg-white/10 p-3">
+      <p className="text-xs text-sidebar-foreground/60">
         Company spend · {companySpend.period}
       </p>
-      <p className="mt-1 text-sm font-normal text-foreground">
+      <p className="mt-1 text-sm font-semibold text-sidebar-foreground tracking-[-0.25px]">
         {spentLabel}{" "}
-        <span className="font-normal text-muted-foreground">/ {budgetLabel}</span>
+        <span className="font-normal text-sidebar-foreground/60">/ {budgetLabel}</span>
       </p>
-      <Progress value={pct} className="mt-2 h-1.5" />
+      <Progress value={pct} className="mt-2 h-1.5 bg-white/20 [&>[data-slot=progress-indicator]]:bg-hope-blue" />
     </div>
   );
 }

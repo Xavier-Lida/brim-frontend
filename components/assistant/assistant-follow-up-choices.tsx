@@ -31,11 +31,11 @@ export function AssistantFollowUpChoices({
             title={entry.hint}
             onClick={() => onSelect(isSelected ? null : entry.prompt)}
             className={cn(
-              "w-full truncate rounded-md border px-2.5 py-1 text-left text-xs transition-colors",
-              "border-border/50 bg-card hover:bg-blue-soft/40",
+              "w-full truncate rounded-[10px] border px-3 py-1.5 text-left text-xs transition-all",
+              "border-dim-gray/40 bg-card hover:bg-blue-soft/40 hover:border-primary/30",
               "disabled:pointer-events-none disabled:opacity-50",
               isSelected &&
-                "border-primary/40 bg-blue-soft ring-1 ring-primary/30"
+                "border-primary/40 bg-blue-soft shadow-[rgba(154,207,246,0.4)_0px_3px_0px_0px]"
             )}
           >
             {entry.label}

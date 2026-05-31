@@ -11,15 +11,17 @@ export function UserNav() {
     .join("");
 
   return (
-    <div className="flex items-center gap-2 px-1 py-1">
+    <div className="flex items-center gap-2.5 px-1 py-1">
       <Avatar size="sm">
-        <AvatarFallback>{initials}</AvatarFallback>
+        <AvatarFallback className="bg-hope-blue/20 text-white text-xs font-semibold">
+          {initials}
+        </AvatarFallback>
       </Avatar>
       <div className="flex min-w-0 flex-col">
-        <span className="truncate text-sm font-normal text-foreground">
+        <span className="truncate text-sm font-semibold text-sidebar-foreground tracking-[-0.25px]">
           {workspaceUser.name}
         </span>
-        <span className="truncate text-xs text-muted-foreground">
+        <span className="truncate text-xs text-sidebar-foreground/60">
           {workspaceUser.role}
         </span>
       </div>

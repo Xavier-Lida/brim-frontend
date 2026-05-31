@@ -31,7 +31,7 @@ import { useMockStore } from "@/lib/hooks/use-mock-store";
 const navItems = [
   { title: "Brim Assistant", href: "/assistant", icon: SparkleIcon },
   { title: "Approvals", href: "/approvals", icon: CheckCircleIcon, badge: "approvals" as const },
-  { title: "Flagged", href: "/flagged", icon: FlagIcon, badge: "flags" as const },
+  { title: "Flagged", href: "/flagged", icon: FlagIcon },
   { title: "Transactions", href: "/transactions", icon: ReceiptIcon },
   { title: "Reports", href: "/reports", icon: FileTextIcon },
   { title: "Policy", href: "/policy", icon: ShieldIcon },
@@ -40,30 +40,29 @@ const navItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { pendingApprovalsCount, unreadFlagsCount } = useMockStore();
+  const { pendingApprovalsCount } = useMockStore();
 
-  const getBadgeCount = (type?: "approvals" | "flags") => {
+  const getBadgeCount = (type?: "approvals") => {
     if (type === "approvals") return pendingApprovalsCount;
-    if (type === "flags") return unreadFlagsCount;
     return 0;
   };
 
   return (
     <Sidebar>
-      <SidebarHeader className="border-b border-sidebar-border/60 p-5">
-        <Link href="/assistant" className="flex items-center gap-2">
-          <div className="flex size-8 items-center justify-center rounded-md bg-primary/15 text-primary">
-            <SparkleIcon weight="fill" />
+      <SidebarHeader className="border-b border-sidebar-border p-5">
+        <Link href="/assistant" className="flex items-center gap-3">
+          <div className="flex size-9 items-center justify-center rounded-[12px] bg-hope-blue/20 text-white">
+            <SparkleIcon weight="fill" size={18} />
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-medium text-sidebar-foreground">
+            <span className="text-sm font-semibold text-sidebar-foreground tracking-[-0.25px]">
               Northwind Labs
             </span>
-            <span className="text-xs text-muted-foreground">Brim workspace</span>
+            <span className="text-xs text-sidebar-foreground/60">Brim workspace</span>
           </div>
         </Link>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="pt-2">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -75,14 +74,16 @@ export function AppSidebar() {
 
                 return (
                   <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild isActive={isActive}>
+                    <SidebarMenuButton asChild isActive={isActive} className="rounded-[10px] text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground data-[active=true]:bg-hope-blue data-[active=true]:text-white data-[active=true]:shadow-[rgba(154,207,246,0.3)_0px_4px_0px_0px]">
                       <Link href={item.href}>
-                        <item.icon />
+                        <item.icon weight={isActive ? "fill" : "regular"} />
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                     {count > 0 && item.badge && (
-                      <SidebarMenuBadge>{count}</SidebarMenuBadge>
+                      <SidebarMenuBadge className="rounded-full bg-hope-blue/20 text-white text-xs">
+                        {count}
+                      </SidebarMenuBadge>
                     )}
                   </SidebarMenuItem>
                 );
@@ -91,9 +92,9 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="flex flex-col gap-3 p-5">
+      <SidebarFooter className="flex flex-col gap-3 p-4">
         <CompanySpendCard />
-        <SidebarSeparator />
+        <SidebarSeparator className="bg-sidebar-border" />
         <UserNav />
       </SidebarFooter>
     </Sidebar>

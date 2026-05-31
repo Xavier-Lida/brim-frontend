@@ -1,542 +1,382 @@
----
-version: alpha
-name: Cursor-design-analysis
-description: Brim Financial dashboard — soft cold polar canvas (`#f6f9fc`) with light frost blues. Ink softened to `#3d4f61`. Primary Frost Blue lightened to `#7ba3c9` with pastel accents (`#e8f2fa`, `#d6e8f5`). Typography uses **Geist** at weight 400 (dashboard); marketing spec below retains CursorGothic reference. Cards use minimal hairlines, no shadows. Timeline/chart frost palette unchanged.
+# Relief — Style Reference
+> Oceanic clarity on a paper white canvas. Illustrations and confident blues guide the user through a clear, calm financial journey.
 
-colors:
-  primary: "#7ba3c9"
-  primary-active: "#6a92b8"
-  primary-soft: "#9ec5e8"
-  ink: "#3d4f61"
-  body: "#6b7c8f"
-  body-strong: "#3d4f61"
-  muted: "#eef4fa"
-  muted-soft: "#6b7c8f"
-  hairline: "#e2eaf3"
-  hairline-soft: "#eef4fa"
-  hairline-strong: "#d6e8f5"
-  canvas: "#f6f9fc"
-  canvas-soft: "#eef4fa"
-  blue-soft: "#e8f2fa"
-  blue-soft-strong: "#d6e8f5"
-  blue-muted: "#b8d4ef"
-  surface-card: "#ffffff"
-  surface-strong: "#e8f2fa"
-  on-primary: "#ffffff"
-  timeline-thinking: "#88c0d0"
-  timeline-grep: "#a3be8c"
-  timeline-read: "#81a1c1"
-  timeline-edit: "#b48ead"
-  timeline-done: "#7ba3c9"
-  semantic-error: "#bf616a"
-  semantic-success: "#a3be8c"
+**Theme:** light
 
-typography:
-  display-mega:
-    fontFamily: "'CursorGothic', system-ui, 'Helvetica Neue', Helvetica, Arial, sans-serif"
-    fontSize: 72px
-    fontWeight: 400
-    lineHeight: 1.1
-    letterSpacing: -2.16px
-  display-lg:
-    fontFamily: "'CursorGothic', sans-serif"
-    fontSize: 36px
-    fontWeight: 400
-    lineHeight: 1.2
-    letterSpacing: -0.72px
-  display-md:
-    fontFamily: "'CursorGothic', sans-serif"
-    fontSize: 26px
-    fontWeight: 400
-    lineHeight: 1.25
-    letterSpacing: -0.325px
-  display-sm:
-    fontFamily: "'CursorGothic', sans-serif"
-    fontSize: 22px
-    fontWeight: 400
-    lineHeight: 1.3
-    letterSpacing: -0.11px
-  title-md:
-    fontFamily: "'CursorGothic', sans-serif"
-    fontSize: 18px
-    fontWeight: 600
-    lineHeight: 1.4
-    letterSpacing: 0
-  title-sm:
-    fontFamily: "'CursorGothic', sans-serif"
-    fontSize: 16px
-    fontWeight: 600
-    lineHeight: 1.4
-    letterSpacing: 0
-  body-md:
-    fontFamily: "'CursorGothic', sans-serif"
-    fontSize: 16px
-    fontWeight: 400
-    lineHeight: 1.5
-    letterSpacing: 0
-  body-tracked:
-    fontFamily: "'CursorGothic', sans-serif"
-    fontSize: 16px
-    fontWeight: 400
-    lineHeight: 1.5
-    letterSpacing: 0.08px
-  body-sm:
-    fontFamily: "'CursorGothic', sans-serif"
-    fontSize: 14px
-    fontWeight: 400
-    lineHeight: 1.5
-    letterSpacing: 0
-  caption:
-    fontFamily: "'CursorGothic', sans-serif"
-    fontSize: 13px
-    fontWeight: 400
-    lineHeight: 1.4
-    letterSpacing: 0
-  caption-uppercase:
-    fontFamily: "'CursorGothic', sans-serif"
-    fontSize: 11px
-    fontWeight: 600
-    lineHeight: 1.4
-    letterSpacing: 0.88px
-    textTransform: uppercase
-  code:
-    fontFamily: "'JetBrains Mono', 'Fira Code', monospace"
-    fontSize: 13px
-    fontWeight: 400
-    lineHeight: 1.5
-    letterSpacing: 0
-  button:
-    fontFamily: "'CursorGothic', sans-serif"
-    fontSize: 14px
-    fontWeight: 500
-    lineHeight: 1.0
-    letterSpacing: 0
-  nav-link:
-    fontFamily: "'CursorGothic', sans-serif"
-    fontSize: 14px
-    fontWeight: 500
-    lineHeight: 1.4
-    letterSpacing: 0
+Relief's visual system evokes a refreshing, confident simplicity, utilizing a primarily cool blue and white palette. Illustrations are front-and-center, creating a friendly and approachable feel rather than an austere financial one. Typography is robust and direct, anchored by strong, rounded buttons that feel tangible and reassuring. The design favors soft elevation and ample whitespace, framing content with a playful organic rather than rigid geometric structure.
 
-rounded:
-  none: 0px
-  xs: 4px
-  sm: 6px
-  md: 8px
-  lg: 12px
-  xl: 16px
-  pill: 9999px
-  full: 9999px
+## Tokens — Colors
 
-spacing:
-  xxs: 4px
-  xs: 8px
-  sm: 12px
-  base: 16px
-  md: 20px
-  lg: 24px
-  xl: 32px
-  xxl: 48px
-  section: 80px
+| Name | Value | Token | Role |
+|------|-------|-------|------|
+| Sky Canvas | `#f9f7f0` | `--color-sky-canvas` | Page background; a soft, warm off-white that creates a friendly and inviting base |
+| Arctic Mist | `#ffffff` | `--color-arctic-mist` | Card backgrounds, elevated container surfaces, primary text for some inverted sections |
+| Deep Ocean | `#13426f` | `--color-deep-ocean` | Primary heading text, dark section backgrounds, link borders and some dark card surfaces |
+| Hope Blue | `#2e96ff` | `--color-hope-blue` | Primary call-to-action button fills, key interactive elements, subtle accent in some headings |
+| Subtle Gray | `#616c8a` | `--color-subtle-gray` | Body text, secondary information, and soft borders |
+| Slate Text | `#333333` | `--color-slate-text` | General body text, default text color for cards and other content blocks |
+| Input Charcoal | `#202634` | `--color-input-charcoal` | Input field text, typically darker for clear readability |
+| Powder Blue | `#bde1f9` | `--color-powder-blue` | Informational badges and subtle background accents, creating a soft blue highlight |
+| Cerulean Link | `#0254a5` | `--color-cerulean-link` | Interactive link text and their hover states, subtly darker than Hope Blue for contrast |
+| Shadow Tint | `#cde7fb` | `--color-shadow-tint` | The base color for button shadows, ensuring they appear as soft blue rather than harsh gray |
+| Sky Fill | `#73b9ff` | `--color-sky-fill` | Decorative illustration fills, adding lighter blue elements without functional interaction |
+| Ocean Fill | `#50a7ff` | `--color-ocean-fill` | Decorative illustration fills, providing a mid-toned blue accent |
+| Accent Blue | `#328dd1` | `--color-accent-blue` | Decorative elements, particularly in illustrations and review card timestamps, indicating secondary information or visual interest |
+| Dim Gray | `#d0d5dd` | `--color-dim-gray` | Subtle borders and dividers, indicating soft visual separation |
 
-components:
-  top-nav:
-    backgroundColor: "{colors.canvas}"
-    textColor: "{colors.ink}"
-    typography: "{typography.nav-link}"
-    height: 64px
-  button-primary:
-    backgroundColor: "{colors.primary}"
-    textColor: "{colors.on-primary}"
-    typography: "{typography.button}"
-    rounded: "{rounded.md}"
-    padding: 10px 18px
-    height: 40px
-  button-primary-active:
-    backgroundColor: "{colors.primary-active}"
-    textColor: "{colors.on-primary}"
-    rounded: "{rounded.md}"
-  button-secondary:
-    backgroundColor: "{colors.surface-card}"
-    textColor: "{colors.ink}"
-    typography: "{typography.button}"
-    rounded: "{rounded.md}"
-    padding: 9px 17px
-    height: 40px
-  button-tertiary-text:
-    backgroundColor: transparent
-    textColor: "{colors.ink}"
-    typography: "{typography.button}"
-  button-download:
-    backgroundColor: "{colors.ink}"
-    textColor: "{colors.canvas}"
-    typography: "{typography.button}"
-    rounded: "{rounded.md}"
-    padding: 12px 20px
-    height: 44px
-  hero-band:
-    backgroundColor: "{colors.canvas}"
-    textColor: "{colors.ink}"
-    typography: "{typography.display-mega}"
-    padding: 80px
-  ide-mockup-card:
-    backgroundColor: "{colors.surface-card}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.lg}"
-    padding: 0
-  ide-pane:
-    backgroundColor: "{colors.canvas-soft}"
-    textColor: "{colors.body}"
-    typography: "{typography.code}"
-    rounded: "{rounded.md}"
-    padding: 16px
-  feature-card:
-    backgroundColor: "{colors.surface-card}"
-    textColor: "{colors.ink}"
-    typography: "{typography.title-md}"
-    rounded: "{rounded.lg}"
-    padding: 24px
-  comparison-card:
-    backgroundColor: "{colors.surface-card}"
-    textColor: "{colors.ink}"
-    typography: "{typography.body-md}"
-    rounded: "{rounded.lg}"
-    padding: 24px
-  timeline-pill-thinking:
-    backgroundColor: "{colors.timeline-thinking}"
-    textColor: "{colors.ink}"
-    typography: "{typography.caption-uppercase}"
-    rounded: "{rounded.pill}"
-    padding: 4px 10px
-  timeline-pill-grep:
-    backgroundColor: "{colors.timeline-grep}"
-    textColor: "{colors.ink}"
-    typography: "{typography.caption-uppercase}"
-    rounded: "{rounded.pill}"
-    padding: 4px 10px
-  timeline-pill-read:
-    backgroundColor: "{colors.timeline-read}"
-    textColor: "{colors.ink}"
-    typography: "{typography.caption-uppercase}"
-    rounded: "{rounded.pill}"
-    padding: 4px 10px
-  timeline-pill-edit:
-    backgroundColor: "{colors.timeline-edit}"
-    textColor: "{colors.ink}"
-    typography: "{typography.caption-uppercase}"
-    rounded: "{rounded.pill}"
-    padding: 4px 10px
-  timeline-pill-done:
-    backgroundColor: "{colors.timeline-done}"
-    textColor: "{colors.on-primary}"
-    typography: "{typography.caption-uppercase}"
-    rounded: "{rounded.pill}"
-    padding: 4px 10px
-  code-block:
-    backgroundColor: "{colors.surface-card}"
-    textColor: "{colors.ink}"
-    typography: "{typography.code}"
-    rounded: "{rounded.lg}"
-    padding: 20px
-  pricing-tier-card:
-    backgroundColor: "{colors.surface-card}"
-    textColor: "{colors.ink}"
-    typography: "{typography.body-md}"
-    rounded: "{rounded.lg}"
-    padding: 32px
-  pricing-tier-featured:
-    backgroundColor: "{colors.ink}"
-    textColor: "{colors.canvas}"
-    typography: "{typography.body-md}"
-    rounded: "{rounded.lg}"
-    padding: 32px
-  text-input:
-    backgroundColor: "{colors.surface-card}"
-    textColor: "{colors.ink}"
-    typography: "{typography.body-md}"
-    rounded: "{rounded.md}"
-    padding: 12px 16px
-    height: 44px
-  badge-pill:
-    backgroundColor: "{colors.surface-strong}"
-    textColor: "{colors.ink}"
-    typography: "{typography.caption-uppercase}"
-    rounded: "{rounded.pill}"
-    padding: 4px 10px
-  cta-band:
-    backgroundColor: "{colors.canvas}"
-    textColor: "{colors.ink}"
-    typography: "{typography.display-lg}"
-    padding: 96px
-  testimonial-card:
-    backgroundColor: "{colors.surface-card}"
-    textColor: "{colors.body}"
-    typography: "{typography.body-md}"
-    rounded: "{rounded.lg}"
-    padding: 24px
-  footer:
-    backgroundColor: "{colors.canvas}"
-    textColor: "{colors.body}"
-    typography: "{typography.body-sm}"
-    padding: 64px 48px
-  footer-link:
-    backgroundColor: transparent
-    textColor: "{colors.body}"
-    typography: "{typography.body-sm}"
----
+## Tokens — Typography
 
-## Overview
+### Gilroy — Primary brand typeface, used across all headings, body text, and UI components. Its slightly soft, humanist sans-serif quality adds approachability and friendliness. Consistent negative letter-spacing contributes to its compact, confident presentation. · `--font-gilroy`
+- **Substitute:** system-ui
+- **Weights:** 400, 500, 600, 700, 800
+- **Sizes:** 12px, 14px, 16px, 18px, 20px, 32px, 40px, 49px, 53px, 58px
+- **Line height:** 0.94, 1.00, 1.10, 1.11, 1.20, 1.29, 1.38, 1.40, 1.43, 1.50, 1.60, 1.63, 1.67, 1.70
+- **Letter spacing:** -0.018
+- **Role:** Primary brand typeface, used across all headings, body text, and UI components. Its slightly soft, humanist sans-serif quality adds approachability and friendliness. Consistent negative letter-spacing contributes to its compact, confident presentation.
 
-Cursor's marketing site reads as a quietly-confident developer brand that believes in editorial calm over IDE-darkness. The base canvas is **cold polar white-blue** (`{colors.canvas}` — #eceff4, Nord Snow Storm / DaisyUI `nord` base-100) holding cool Polar Night ink (`{colors.ink}` — #2e3440) for body and display alike. The single brand voltage is **Frost Blue** (`{colors.primary}` — #5e81ac, Nord Frost / DaisyUI `nord` primary) reserved for primary CTAs and the wordmark — used scarcely.
+### Type Scale
 
-Type runs **CursorGothic** as the single sans family. Display sits at weight 400 with negative letter-spacing — a magazine-editorial voice rather than tech-bombastic. JetBrains Mono carries every code surface (and code surfaces are roughly half the page).
+| Role | Size | Line Height | Letter Spacing | Token |
+|------|------|-------------|----------------|-------|
+| caption | 12px | 1.7 | -0.22px | `--text-caption` |
+| body-sm | 14px | 1.63 | -0.25px | `--text-body-sm` |
+| body | 16px | 1.6 | -0.29px | `--text-body` |
+| subheading | 18px | 1.5 | -0.32px | `--text-subheading` |
+| heading-sm | 20px | 1.43 | -0.36px | `--text-heading-sm` |
+| heading | 32px | 1.29 | -0.58px | `--text-heading` |
+| heading-lg | 40px | 1.2 | -0.72px | `--text-heading-lg` |
+| display | 58px | 1.11 | -1.04px | `--text-display` |
 
-The brand's strongest visual signature is the **AI-timeline pill palette**: five frost-toned pills (cyan `{colors.timeline-thinking}`, sage `{colors.timeline-grep}`, blue `{colors.timeline-read}`, lavender `{colors.timeline-edit}`, frost `{colors.timeline-done}`) marking AI-action stages inside in-product timeline visualizations. Used only in product UI — never as system action colors.
+## Tokens — Spacing & Shapes
 
-**Key Characteristics:**
-- Cold polar canvas (Nord Snow Storm #eceff4), not warm cream. Ink is cool Polar Night (#2e3440), not warm near-black.
-- Single CTA color: `{colors.primary}` (Frost Blue #5e81ac). Used scarcely.
-- Display weight stays at 400 — never bold. Magazine voice.
-- AI timeline frost tones: 5 dedicated Nord-inspired tokens for in-product agent action stages.
-- Compact 8px CTA radius — developer dialect.
-- Hairline-only depth; no drop shadows.
-- 80px section rhythm.
+**Density:** spacious
 
-## Colors
+### Spacing Scale
 
-### Brand & Accent
-- **Frost Blue** (`{colors.primary}` — #5e81ac): Nord Frost / DaisyUI `nord` primary. Primary CTA pills, wordmark, hero accent. Used scarcely.
-- **Frost Blue Active** (`{colors.primary-active}` — #4c7099): Press state.
+| Name | Value | Token |
+|------|-------|-------|
+| 7 | 7px | `--spacing-7` |
+| 8 | 8px | `--spacing-8` |
+| 10 | 10px | `--spacing-10` |
+| 11 | 11px | `--spacing-11` |
+| 14 | 14px | `--spacing-14` |
+| 16 | 16px | `--spacing-16` |
+| 18 | 18px | `--spacing-18` |
+| 20 | 20px | `--spacing-20` |
+| 21 | 21px | `--spacing-21` |
+| 24 | 24px | `--spacing-24` |
+| 28 | 28px | `--spacing-28` |
+| 30 | 30px | `--spacing-30` |
+| 34 | 34px | `--spacing-34` |
+| 40 | 40px | `--spacing-40` |
+| 56 | 56px | `--spacing-56` |
+| 70 | 70px | `--spacing-70` |
 
-### Surface
-- **Canvas** (`{colors.canvas}` — #eceff4): Nord Snow Storm page floor (DaisyUI `nord` base-100).
-- **Canvas Soft** (`{colors.canvas-soft}` — #e5e9f0): IDE-pane background inside mockups (DaisyUI `nord` base-200).
-- **Surface Card** (`{colors.surface-card}` — #ffffff): Pure white card surface — slight contrast against the polar canvas.
-- **Surface Strong** (`{colors.surface-strong}` — #d8dee9): Badges, tag pills (DaisyUI `nord` base-300).
+### Border Radius
 
-### Hairlines
-- **Hairline** (`{colors.hairline}` — #d8dee9): 1px divider (Nord4).
-- **Hairline Soft** (`{colors.hairline-soft}` — #e5e9f0): Lighter divider (Nord5).
-- **Hairline Strong** (`{colors.hairline-strong}` — #c0c7d4): Stronger panel outline.
+| Element | Value |
+|---------|-------|
+| cards | 18px |
+| badges | 100px |
+| buttons | 70px |
+| hero-elements | 49px |
 
-### Text
-- **Ink** (`{colors.ink}` — #2e3440): Display, body emphasis. Polar Night / DaisyUI `nord` base-content.
-- **Body** (`{colors.body}` — #434c5e): Default running-text (Nord2).
-- **Body Strong** (`{colors.body-strong}` — #2e3440): Same as ink.
-- **Muted** (`{colors.muted}` — #4c566a): Sub-titles (Nord3 / DaisyUI `nord` neutral).
-- **Muted Soft** (`{colors.muted-soft}` — #616e88): Disabled text.
-- **On Primary** (`{colors.on-primary}` — #eceff4): Snow Storm text on Frost Blue.
+### Shadows
 
-### Timeline (AI-action signature)
-- **Thinking** (`{colors.timeline-thinking}` — #88c0d0): Frost cyan (Nord8). Used inside in-product agent timeline only.
-- **Grep** (`{colors.timeline-grep}` — #a3be8c): Sage (Nord14).
-- **Read** (`{colors.timeline-read}` — #81a1c1): Frost blue (Nord9 / DaisyUI `nord` secondary).
-- **Edit** (`{colors.timeline-edit}` — #b48ead): Lavender (Nord15 / DaisyUI `nord` info).
-- **Done** (`{colors.timeline-done}` — #5e81ac): Frost blue (Nord10 / DaisyUI `nord` primary).
+| Name | Value | Token |
+|------|-------|-------|
+| subtle | `rgba(154, 207, 246, 0.5) 0px 7px 0px 0px` | `--shadow-subtle` |
+| subtle-2 | `rgba(0, 0, 0, 0.05) 0px 3px 0px 0px` | `--shadow-subtle-2` |
+| subtle-3 | `rgba(154, 207, 246, 0.5) 0px 5px 0px 0px` | `--shadow-subtle-3` |
 
-### Semantic
-- **Success** (`{colors.semantic-success}` — #a3be8c): Confirmation indicators (Nord14 / DaisyUI `nord` success).
-- **Error** (`{colors.semantic-error}` — #bf616a): Validation errors (Nord11 / DaisyUI `nord` error).
+### Layout
 
-## Typography
-
-### Font Family
-**CursorGothic** is the licensed display + body family. Fallback: `system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif`. Code surfaces switch to **JetBrains Mono**.
-
-### Hierarchy
-
-| Token | Size | Weight | Line Height | Letter Spacing | Use |
-|---|---|---|---|---|---|
-| `{typography.display-mega}` | 72px | 400 | 1.1 | -2.16px | Homepage hero h1 |
-| `{typography.display-lg}` | 36px | 400 | 1.2 | -0.72px | Section heads |
-| `{typography.display-md}` | 26px | 400 | 1.25 | -0.325px | Sub-section heads |
-| `{typography.display-sm}` | 22px | 400 | 1.3 | -0.11px | Card group titles |
-| `{typography.title-md}` | 18px | 600 | 1.4 | 0 | Component titles |
-| `{typography.title-sm}` | 16px | 600 | 1.4 | 0 | List labels |
-| `{typography.body-md}` | 16px | 400 | 1.5 | 0 | Default body |
-| `{typography.body-tracked}` | 16px | 400 | 1.5 | 0.08px | Tracked editorial body |
-| `{typography.body-sm}` | 14px | 400 | 1.5 | 0 | Footer body |
-| `{typography.caption}` | 13px | 400 | 1.4 | 0 | Photo captions |
-| `{typography.caption-uppercase}` | 11px | 600 | 1.4 | 0.88px | Section labels, timeline pill labels |
-| `{typography.code}` | 13px | 400 | 1.5 | 0 | Code blocks — JetBrains Mono |
-| `{typography.button}` | 14px | 500 | 1.0 | 0 | CTA pill labels |
-| `{typography.nav-link}` | 14px | 500 | 1.4 | 0 | Top-nav menu |
-
-### Principles
-- **Display weight stays at 400.** Magazine voice, never bold.
-- **Negative letter-spacing on display only.** -0.11px to -2.16px tracking.
-- **JetBrains Mono on every code surface.**
-
-### Note on Font Substitutes
-CursorGothic is licensed. Open-source substitute: **Inter** at weight 400 with letter-spacing -1.5%. Or **GT Sectra** for a more editorial feel.
-
-## Layout
-
-### Spacing System
-- **Base unit:** 4px.
-- **Tokens:** `{spacing.xxs}` 4px · `{spacing.xs}` 8px · `{spacing.sm}` 12px · `{spacing.base}` 16px · `{spacing.md}` 20px · `{spacing.lg}` 24px · `{spacing.xl}` 32px · `{spacing.xxl}` 48px · `{spacing.section}` 80px.
-- **Section padding:** 80px.
-
-### Grid & Container
-- Max content width: ~1200px.
-- Editorial body: 12-column grid.
-- Feature card grids: 2-up at desktop for splits, 3-up for benefits.
-- Footer: 5-column at desktop.
-
-### Whitespace Philosophy
-Generous editorial pacing — closer to a print magazine than a tech site. The polar canvas has plenty of breathing room; cards within bands sit close (16-24px gap).
-
-## Elevation & Depth
-
-The system uses **hairline-only depth**. No drop shadows, no elevation tiers. Cards float above the canvas via 1px hairlines and the slight white-on-polar contrast.
-
-| Level | Treatment | Use |
-|---|---|---|
-| Flat (canvas) | `{colors.canvas}` (#eceff4) | Body bands, footer |
-| Card | `{colors.surface-card}` (#ffffff) | Content cards |
-| Hairline border | 1px `{colors.hairline}` | Card outlines, dividers |
-| IDE pane | `{colors.canvas-soft}` (#e5e9f0) | Inside IDE mockup cards |
-
-### Decorative Depth
-- **IDE-mockup cards** are the only "elevated" element. White card on polar canvas with internal pane structure mimicking the actual Cursor editor.
-- **Timeline frost pills** add chromatic depth without surface elevation.
-
-## Shapes
-
-### Border Radius Scale
-
-| Token | Value | Use |
-|---|---|---|
-| `{rounded.none}` | 0px | Reserved |
-| `{rounded.xs}` | 4px | Inline tags |
-| `{rounded.sm}` | 6px | Compact rows |
-| `{rounded.md}` | 8px | CTA buttons, form inputs |
-| `{rounded.lg}` | 12px | Cards, IDE panes |
-| `{rounded.xl}` | 16px | Larger feature cards (rare) |
-| `{rounded.pill}` | 9999px | Timeline pills, badges |
-| `{rounded.full}` | 9999px | Avatars (rare) |
+- **Section gap:** 68px
+- **Card padding:** 28px
+- **Element gap:** 14px
 
 ## Components
 
-### Top Navigation
+### Primary Action Button
+**Role:** Call-to-action button
 
-**`top-nav`** — Background `{colors.canvas}`, text `{colors.ink}`, height 64px. Layout: Cursor wordmark left, primary horizontal menu (Pricing / Features / Enterprise / Blog / Forum / Careers), Sign In + Download primary CTA right.
+Solid 'Hope Blue' fill with 'Arctic Mist' text and 'Shadow Tint' soft blue shadow, featuring a highly rounded '70px' border-radius. Padding is generous `14px 28px` to give ample tap area and visual weight.
 
-### Buttons
+### Compact Action Button
+**Role:** Secondary call-to-action button
 
-**`button-primary`** — The signature Frost Blue CTA. Background `{colors.primary}`, text `{colors.on-primary}`, type `{typography.button}` (14px / 500), padding 10px × 18px, height 40px, rounded `{rounded.md}` (8px).
+A variant of the primary action, using 'Hope Blue' fill and 'Arctic Mist' text. Features a '42px' border-radius for slightly less extreme rounding, and `0px 24px` padding, suggesting a more compact or secondary role without the prominent vertical padding.
 
-**`button-primary-active`** — Press state. Background `{colors.primary-active}`.
+### Dark Feature Card
+**Role:** Informational display card
 
-**`button-secondary`** — White card pill on polar canvas. Background `{colors.surface-card}`, text `{colors.ink}`, 1px `{colors.hairline-strong}` border.
+A card with 'Deep Ocean' background, '18px' border-radius, and generous `28px` padding. Used for features or content blocks that require a distinct, darker background to stand out.
 
-**`button-tertiary-text`** — Inline ink text link.
+### Review Testimonial Card
+**Role:** User testimonial display
 
-**`button-download`** — Larger ink-canvas CTA. Background `{colors.ink}`, text `{colors.canvas}`, padding 12px × 20px, height 44px. Used for "Download for macOS" type CTAs.
+Cards for displaying user reviews, set against 'Arctic Mist' with '26px' border-radius. Features a subtle `rgba(0, 0, 0, 0.05) 0px 3px 0px 0px` box shadow, giving a slight lift without being overly heavy. Padding is `34px 30px 24px 30px`.
 
-### Hero & IDE Mockups
+### Input Field
+**Role:** User data entry
 
-**`hero-band`** — Background `{colors.canvas}`, full-width display headline in `{typography.display-mega}` (72px / 400 / -2.16px), subhead in `{typography.body-md}`, two CTAs (`button-download` + `button-tertiary-text`), and a centered IDE-mockup card below the hero copy.
+Input fields have an 'Arctic Mist' background with 'Input Charcoal' text, with a `32px` left padding. There's no visible border-radius or border color, implying a minimalist aesthetic where the field itself is visually integrated into the background.
 
-**`ide-mockup-card`** — A white card containing a multi-pane IDE mockup (sidebar + main editor + chat panel + terminal). Background `{colors.surface-card}`, rounded `{rounded.lg}` (12px), 1px `{colors.hairline}` border, no padding (panes fill the card edge-to-edge).
+### Pill Badge
+**Role:** Categorization or status indicator
 
-**`ide-pane`** — Individual IDE pane inside the mockup. Background `{colors.canvas-soft}`, text `{colors.body}` in `{typography.code}` (JetBrains Mono 13px), rounded `{rounded.md}` (8px), padding 16px.
-
-### Cards
-
-**`feature-card`** — Background `{colors.surface-card}`, text `{colors.ink}`, type `{typography.title-md}`, rounded `{rounded.lg}`, padding 24px. 1px `{colors.hairline}` border.
-
-**`comparison-card`** — Side-by-side "Cursor vs other tools" card. Same surface and rounding; internally split into 2 columns.
-
-**`testimonial-card`** — Quote card. Background `{colors.surface-card}`, text `{colors.body}`, rounded `{rounded.lg}`, padding 24px.
-
-### AI Timeline (signature)
-
-**`timeline-pill-thinking`** — Frost cyan pill. Background `{colors.timeline-thinking}`, text `{colors.ink}`, type `{typography.caption-uppercase}` (11px / 600 / 0.88px tracking, uppercase), rounded `{rounded.pill}`, padding 4px × 10px. Marks "Thinking" stage in product timeline.
-
-**`timeline-pill-grep`** — Sage pill. Same shape, background `{colors.timeline-grep}`. Marks "Grepping" stage.
-
-**`timeline-pill-read`** — Frost-blue pill. Background `{colors.timeline-read}`. Marks "Reading" stage.
-
-**`timeline-pill-edit`** — Lavender pill. Background `{colors.timeline-edit}`. Marks "Editing" stage.
-
-**`timeline-pill-done`** — Frost pill. Background `{colors.timeline-done}`, text `{colors.on-primary}`. Marks "Done" stage.
-
-### Code
-
-**`code-block`** — Inline code block. Background `{colors.surface-card}`, text `{colors.ink}` in `{typography.code}`, rounded `{rounded.lg}`, padding 20px, 1px `{colors.hairline}` border.
-
-### Pricing
-
-**`pricing-tier-card`** — Background `{colors.surface-card}`, rounded `{rounded.lg}`, padding 32px, 1px `{colors.hairline}` border.
-
-**`pricing-tier-featured`** — Featured tier inverts to ink. Background `{colors.ink}`, text `{colors.canvas}`. Same shape, dark inversion signals "highlighted" without colored ribbon.
-
-### Forms & Tags
-
-**`text-input`** — Background `{colors.surface-card}`, text `{colors.ink}`, rounded `{rounded.md}` (8px), padding 12px × 16px, height 44px.
-
-**`badge-pill`** — Small uppercase pill. Background `{colors.surface-strong}`, text `{colors.ink}`, type `{typography.caption-uppercase}`, rounded `{rounded.pill}`, padding 4px × 10px.
-
-### CTA / Footer
-
-**`cta-band`** — Pre-footer "Try Cursor now" band. Background `{colors.canvas}`, centered display headline in `{typography.display-lg}`, single Frost Blue CTA. 96px vertical padding.
-
-**`footer`** — Closing footer. Background `{colors.canvas}`, text `{colors.body}`. 5-column link list. 64×48px padding.
-
-**`footer-link`** — Background transparent, text `{colors.body}`, type `{typography.body-sm}`.
+Uses 'Powder Blue' as a background color with 'Slate Text' for content, and a '100px' border-radius to create a full pill shape. Vertical padding is `10.5px` and horizontal is `21px`, indicating a small, rounded tag.
 
 ## Do's and Don'ts
 
 ### Do
-- Reserve `{colors.primary}` (Frost Blue) for primary CTAs and brand wordmark.
-- Keep display weight at 400. The editorial voice depends on this.
-- Use the polar `{colors.canvas}` page floor (Nord Snow Storm) — cards may be pure white for contrast.
-- Render every code surface (inline, blocks, IDE panes) in JetBrains Mono.
-- Use timeline frost tones only inside in-product agent visualizations — never as system action colors.
+- Prioritize 'Hope Blue' (#2e96ff) for all primary interactive elements like call-to-action buttons, maintaining a '70px' border-radius for their rounded pill shape.
+- Use 'Gilroy' font throughout, applying the detected negative letter-spacing for each specific `typeScale` role to maintain a compact and confident appearance.
+- Employ 'Deep Ocean' (#13426f) for primary headings and dark content sections, contrasted with 'Sky Canvas' (#f9f7f0) or 'Arctic Mist' (#ffffff) for backgrounds.
+- Apply '18px' border-radius to general information cards and `26px` for testimonial cards, providing a consistent soft-edged aesthetic.
+- Maintain a clear visual hierarchy by limiting prominent shadows to interactive elements and specific cards (e.g., `rgba(0, 0, 0, 0.05) 0px 3px 0px 0px` for review cards).
+- Use 'Sky Canvas' (#f9f7f0) as the underlying page background, with 'Arctic Mist' (#ffffff) for most interactive card surfaces, ensuring a bright and open feel.
 
 ### Don't
-- Don't introduce a secondary brand action color. Frost Blue is the only one.
-- Don't drop display to bold weights (700+). Magazine voice depends on 400.
-- Don't add drop shadows. Hairlines + ink-on-polar contrast carry the depth.
-- Don't use timeline frost tones on non-timeline UI. They're scoped to the agent timeline only.
-- Don't extract a CTA color from a third-party widget (cookie consent, OneTrust). The brand's CTA is what appears on actual product CTAs.
-- Don't reintroduce warm cream or orange tones — the palette stays cold Nord / DaisyUI `nord`.
+- Avoid harsh, dark shadows; instead, use the subtle 'Shadow Tint' (#cde7fb) for button elevation to keep the visual tone light and approachable.
+- Do not introduce new saturated accent colors outside of the blues and grays; the color palette is intentionally focused for brand consistency.
+- Refrain from using sharp corners; all UI elements from buttons to cards should have a generous border-radius, typically `18px`, `26px`, `70px`, or `100px`.
+- Do not deviate from the 'Gilroy' typeface or adjust its letter-spacing outside the defined `typeScale` roles, as its specific tracking is a key brand identifier.
+- Avoid dense, information-heavy blocks; ensure generous `28px` card padding and `14px` element gaps to maintain a spacious and airy layout.
+- Do not use dark backgrounds for general body text or utility elements; save 'Deep Ocean' for prominent headings or distinct sections.
 
-## Responsive Behavior
+## Surfaces
 
-### Breakpoints
+| Level | Name | Value | Purpose |
+|-------|------|-------|---------|
+| 0 | Sky Canvas | `#f9f7f0` | Dominant page background, providing a warm, inviting canvas. |
+| 1 | Arctic Mist | `#ffffff` | Primary surface for cards, input fields, and elevated components, appearing brighter and slightly lifted. |
+| 2 | Deep Ocean | `#13426f` | Background for feature cards and distinct content blocks, creating a section of visual weight and contrast. |
+| 3 | Powder Blue | `#bde1f9` | Background for badges and small informational tags, providing a soft chromatic accent on surfaces. |
 
-| Name | Width | Key Changes |
-|---|---|---|
-| Mobile | < 640px | Hero h1 72→32px; IDE mockup collapses to single pane preview; feature grid 1-up; nav hamburger. |
-| Tablet | 640–1024px | Hero h1 56px; IDE mockup compresses; feature grid 2-up. |
-| Desktop | 1024–1280px | Full hero h1 72px; full multi-pane IDE mockup; feature grid 3-up. |
-| Wide | > 1280px | Content caps at 1200px. |
+## Elevation
 
-### Touch Targets
-- Primary CTA at 40px height — at WCAG AA, padded for AAA.
-- Download CTA at 44px — at AAA.
+- **Primary Action Button:** `rgba(154, 207, 246, 0.5) 0px 7px 0px 0px`
+- **Secondary Action Button:** `rgba(154, 207, 246, 0.5) 0px 5px 0px 0px`
+- **Review Testimonial Card:** `rgba(0, 0, 0, 0.05) 0px 3px 0px 0px`
 
-### Collapsing Strategy
-- Top nav switches to hamburger below 768px.
-- IDE mockup multi-pane collapses to a single primary pane preview on mobile.
-- Feature grid: 3-up → 2-up → 1-up.
+## Imagery
 
-## Iteration Guide
+Imagery primarily utilizes custom conceptual illustrations and product screenshots. Illustrations are dimensional and playful, featuring organic, rounded forms in blues, grays, and occasional pops of warm orange or yellow. They often show symbolic objects (money, boats, anchors, piggy banks) within scenes that evoke financial journey narratives, heavily using the brand's blue palette. Product screenshots are typically presented within mockups of mobile devices. Icons are filled, rounded, and mono-color, complementing the illustration style. Imagery plays a dual role: setting a decorative, approachable atmosphere and serving as explanatory content, often adjacent to text blocks. It is image-heavy, balancing UI with illustrative storytelling.
 
-1. Focus on a single component at a time.
-2. CTAs default to `{rounded.md}` (8px). Cards use `{rounded.lg}` (12px).
-3. Variants live as separate entries inside `components:`.
-4. Use `{token.refs}` everywhere — never inline hex.
-5. Hover state never documented.
-6. CursorGothic 400 for display, 400/500/600 for body. JetBrains Mono on every code surface.
-7. Frost Blue stays scarce.
-8. Timeline frost tones stay scoped to in-product agent visualizations.
+## Layout
 
-## Known Gaps
+The page primarily uses a max-width contained layout, with content centered. The hero section features a soft 'Sky Canvas' background with a large, centered headline and button, anchored by significant illustrations across the bottom. Sections maintain a consistent vertical rhythm, often alternating between white and blue backgrounds in bands. Content frequently follows a text-left/image-right or image-left/text-right pattern, or stacked centered elements. Feature sections often employ 3-column card grids. There is a strong emphasis on spaciousness, with ample vertical and horizontal padding, creating a comfortable density. Navigation is a simple top bar, with a logo on the left and a 'Primary Action Button' on the far right.
 
-- CursorGothic is a licensed typeface; Inter is the substitute.
-- Animation timings (timeline pill entrance, IDE pane reveal) out of scope.
-- In-app surfaces (code editor, chat panel, agent timeline) only partially captured via marketing IDE mockups.
-- Form validation states beyond focus not visible on captured surfaces.
+## Agent Prompt Guide
+
+Quick Color Reference:
+text: #333333
+background: #f9f7f0
+border: #d0d5dd
+accent: #2e96ff
+primary action: #2e96ff (filled action)
+
+Example Component Prompts:
+1. Create a Primary Action Button: #2e96ff background, #40444e text, 9999px radius, compact pill padding. Use this filled treatment for the main CTA.
+2. Design a 'Dark Feature Card': 'Deep Ocean' background, 18px radius, 28px padding. Headline 'Link your debt' at 20px Gilroy weight 700, #ffffff, letter-spacing -0.36px. Body text 'Discover savings...' at 16px Gilroy weight 400, #ffffff, letter-spacing -0.29px. Include a central illustration. 
+3. Build a 'Review Testimonial Card': 'Arctic Mist' background, 26px radius, rgba(0, 0, 0, 0.05) 0px 3px 0px 0px shadow. Padding 34px 30px 24px 30px. Body text 'I've already seen improvements...' at 16px Gilroy weight 400, #333333, letter-spacing -0.29px. Author name 'JazzyJ367' at 14px Gilroy weight 700, #333333, letter-spacing -0.25px.
+
+## Similar Brands
+
+- **Wealthfront** — Clean, light UI with strong photography and clear, confident calls-to-action, avoiding visual clutter.
+- **Chime** — Approachable financial app design using blues and whites, friendly illustrations, and clear path to action.
+- **Mint** — Financial management with an emphasis on clarity, soft UI elements, and a user-friendly, non-intimidating aesthetic.
+- **SoFi** — Modern fintech feel with a focus on simple, clean layouts and a strong brand color, often using illustrations to convey concepts.
+
+## Quick Start
+
+### CSS Custom Properties
+
+```css
+:root {
+  /* Colors */
+  --color-sky-canvas: #f9f7f0;
+  --color-arctic-mist: #ffffff;
+  --color-deep-ocean: #13426f;
+  --color-hope-blue: #2e96ff;
+  --color-subtle-gray: #616c8a;
+  --color-slate-text: #333333;
+  --color-input-charcoal: #202634;
+  --color-powder-blue: #bde1f9;
+  --color-cerulean-link: #0254a5;
+  --color-shadow-tint: #cde7fb;
+  --color-sky-fill: #73b9ff;
+  --color-ocean-fill: #50a7ff;
+  --color-accent-blue: #328dd1;
+  --color-dim-gray: #d0d5dd;
+
+  /* Typography — Font Families */
+  --font-gilroy: 'Gilroy', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Typography — Scale */
+  --text-caption: 12px;
+  --leading-caption: 1.7;
+  --tracking-caption: -0.22px;
+  --text-body-sm: 14px;
+  --leading-body-sm: 1.63;
+  --tracking-body-sm: -0.25px;
+  --text-body: 16px;
+  --leading-body: 1.6;
+  --tracking-body: -0.29px;
+  --text-subheading: 18px;
+  --leading-subheading: 1.5;
+  --tracking-subheading: -0.32px;
+  --text-heading-sm: 20px;
+  --leading-heading-sm: 1.43;
+  --tracking-heading-sm: -0.36px;
+  --text-heading: 32px;
+  --leading-heading: 1.29;
+  --tracking-heading: -0.58px;
+  --text-heading-lg: 40px;
+  --leading-heading-lg: 1.2;
+  --tracking-heading-lg: -0.72px;
+  --text-display: 58px;
+  --leading-display: 1.11;
+  --tracking-display: -1.04px;
+
+  /* Typography — Weights */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  /* Spacing */
+  --spacing-7: 7px;
+  --spacing-8: 8px;
+  --spacing-10: 10px;
+  --spacing-11: 11px;
+  --spacing-14: 14px;
+  --spacing-16: 16px;
+  --spacing-18: 18px;
+  --spacing-20: 20px;
+  --spacing-21: 21px;
+  --spacing-24: 24px;
+  --spacing-28: 28px;
+  --spacing-30: 30px;
+  --spacing-34: 34px;
+  --spacing-40: 40px;
+  --spacing-56: 56px;
+  --spacing-70: 70px;
+
+  /* Layout */
+  --section-gap: 68px;
+  --card-padding: 28px;
+  --element-gap: 14px;
+
+  /* Border Radius */
+  --radius-2xl: 18px;
+  --radius-3xl: 26px;
+  --radius-3xl-2: 30px;
+  --radius-3xl-3: 40px;
+  --radius-full: 49px;
+  --radius-full-2: 70px;
+  --radius-full-3: 100px;
+
+  /* Named Radii */
+  --radius-cards: 18px;
+  --radius-badges: 100px;
+  --radius-buttons: 70px;
+  --radius-hero-elements: 49px;
+
+  /* Shadows */
+  --shadow-subtle: rgba(154, 207, 246, 0.5) 0px 7px 0px 0px;
+  --shadow-subtle-2: rgba(0, 0, 0, 0.05) 0px 3px 0px 0px;
+  --shadow-subtle-3: rgba(154, 207, 246, 0.5) 0px 5px 0px 0px;
+
+  /* Surfaces */
+  --surface-sky-canvas: #f9f7f0;
+  --surface-arctic-mist: #ffffff;
+  --surface-deep-ocean: #13426f;
+  --surface-powder-blue: #bde1f9;
+}
+```
+
+### Tailwind v4
+
+```css
+@theme {
+  /* Colors */
+  --color-sky-canvas: #f9f7f0;
+  --color-arctic-mist: #ffffff;
+  --color-deep-ocean: #13426f;
+  --color-hope-blue: #2e96ff;
+  --color-subtle-gray: #616c8a;
+  --color-slate-text: #333333;
+  --color-input-charcoal: #202634;
+  --color-powder-blue: #bde1f9;
+  --color-cerulean-link: #0254a5;
+  --color-shadow-tint: #cde7fb;
+  --color-sky-fill: #73b9ff;
+  --color-ocean-fill: #50a7ff;
+  --color-accent-blue: #328dd1;
+  --color-dim-gray: #d0d5dd;
+
+  /* Typography */
+  --font-gilroy: 'Gilroy', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Typography — Scale */
+  --text-caption: 12px;
+  --leading-caption: 1.7;
+  --tracking-caption: -0.22px;
+  --text-body-sm: 14px;
+  --leading-body-sm: 1.63;
+  --tracking-body-sm: -0.25px;
+  --text-body: 16px;
+  --leading-body: 1.6;
+  --tracking-body: -0.29px;
+  --text-subheading: 18px;
+  --leading-subheading: 1.5;
+  --tracking-subheading: -0.32px;
+  --text-heading-sm: 20px;
+  --leading-heading-sm: 1.43;
+  --tracking-heading-sm: -0.36px;
+  --text-heading: 32px;
+  --leading-heading: 1.29;
+  --tracking-heading: -0.58px;
+  --text-heading-lg: 40px;
+  --leading-heading-lg: 1.2;
+  --tracking-heading-lg: -0.72px;
+  --text-display: 58px;
+  --leading-display: 1.11;
+  --tracking-display: -1.04px;
+
+  /* Spacing */
+  --spacing-7: 7px;
+  --spacing-8: 8px;
+  --spacing-10: 10px;
+  --spacing-11: 11px;
+  --spacing-14: 14px;
+  --spacing-16: 16px;
+  --spacing-18: 18px;
+  --spacing-20: 20px;
+  --spacing-21: 21px;
+  --spacing-24: 24px;
+  --spacing-28: 28px;
+  --spacing-30: 30px;
+  --spacing-34: 34px;
+  --spacing-40: 40px;
+  --spacing-56: 56px;
+  --spacing-70: 70px;
+
+  /* Border Radius */
+  --radius-2xl: 18px;
+  --radius-3xl: 26px;
+  --radius-3xl-2: 30px;
+  --radius-3xl-3: 40px;
+  --radius-full: 49px;
+  --radius-full-2: 70px;
+  --radius-full-3: 100px;
+
+  /* Shadows */
+  --shadow-subtle: rgba(154, 207, 246, 0.5) 0px 7px 0px 0px;
+  --shadow-subtle-2: rgba(0, 0, 0, 0.05) 0px 3px 0px 0px;
+  --shadow-subtle-3: rgba(154, 207, 246, 0.5) 0px 5px 0px 0px;
+}
+```
