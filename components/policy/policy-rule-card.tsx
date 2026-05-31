@@ -51,7 +51,7 @@ export function PolicyRuleCard({
 
   return (
     <div className="flex items-start gap-4 rounded-xl border border-border/50 bg-card p-6 shadow-none">
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-soft text-primary/70">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-soft text-primary">
         <PolicyIcon req={req} />
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -65,7 +65,7 @@ export function PolicyRuleCard({
           <Badge variant="outline">{policy.effective_date}</Badge>
         </div>
         {req.approval_threshold_cad != null && (
-          <p className="text-base font-medium text-primary/80">
+          <p className="text-base font-medium text-primary">
             Pre-approval above ${req.approval_threshold_cad} CAD
           </p>
         )}

@@ -53,7 +53,7 @@ export function AssistantChat() {
                 className={cn(
                   "max-w-[85%] rounded-lg px-4 py-2.5 text-sm",
                   msg.role === "user"
-                    ? "bg-primary/75 text-primary-foreground"
+                    ? "bg-primary text-primary-foreground"
                     : "border border-border/40 bg-blue-soft/50 text-foreground"
                 )}
               >

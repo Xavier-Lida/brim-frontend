@@ -41,6 +41,7 @@ import {
   workspaceUser,
 } from "@/lib/mocks/fixtures";
 import { generateId } from "@/lib/mocks/services";
+import { toast } from "sonner";
 import type {
   ApprovalRequest,
   ApprovalStatus,
@@ -243,6 +244,15 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     [policies]
   );
 
+  const afterPolicyChange = useCallback(async () => {
+    await Promise.all([
+      refreshFlags(),
+      refreshTransactions(),
+      refreshNotifications(),
+    ]);
+    toast.success("Rules updated — compliance rescan complete");
+  }, [refreshFlags, refreshTransactions, refreshNotifications]);
+
   const togglePolicy = useCallback(
     async (id: string) => {
       const policy = policies.find((p) => p.id === id);
@@ -251,14 +261,16 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
       setPolicies((prev) =>
         prev.map((p) => (p.id === id ? { ...p, ...updated } : p))
       );
+      await afterPolicyChange();
     },
-    [policies]
+    [policies, afterPolicyChange]
   );
 
   const deletePolicy = useCallback(async (id: string) => {
     await deletePolicyApi(id);
     setPolicies((prev) => prev.filter((p) => p.id !== id));
-  }, []);
+    await afterPolicyChange();
+  }, [afterPolicyChange]);
 
   const addPolicy = useCallback(
     async (data: {
@@ -268,14 +280,16 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     }) => {
       const created = await createPolicy(data);
       setPolicies((prev) => [created, ...prev]);
+      await afterPolicyChange();
     },
-    []
+    [afterPolicyChange]
   );
 
   const importPolicies = useCallback(async (drafts: PolicyImportDraft[]) => {
     const result = await confirmPolicyImport(drafts);
     setPolicies((prev) => [...result.policies, ...prev]);
-  }, []);
+    await afterPolicyChange();
+  }, [afterPolicyChange]);
 
   const analyzeImport = useCallback(
     async (input: { content?: string; pdf_base64?: string }) => {
