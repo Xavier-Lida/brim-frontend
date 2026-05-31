@@ -1,5 +1,4 @@
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
+import { API_BASE_URL } from "@/lib/api/config";
 
 export class ApiError extends Error {
   constructor(
@@ -35,14 +34,24 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const { body, params, headers, ...rest } = options;
 
-  const response = await fetch(buildUrl(path, params), {
-    ...rest,
-    headers: {
-      "Content-Type": "application/json",
-      ...headers,
-    },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  let response: Response;
+  try {
+    response = await fetch(buildUrl(path, params), {
+      ...rest,
+      headers: {
+        "Content-Type": "application/json",
+        ...headers,
+      },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : "Network error";
+    throw new ApiError(
+      `Cannot reach the API at ${API_BASE_URL} (${reason}). Start the backend or check BACKEND_URL.`,
+      0,
+      err
+    );
+  }
 
   if (!response.ok) {
     let detail: unknown;

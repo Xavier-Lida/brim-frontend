@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { MagnifyingGlassIcon } from "@phosphor-icons/react";
+import { useMemo, useState } from "react";
+import { MagnifyingGlassIcon, ScanIcon } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { FlagRow } from "@/components/flagged/flag-row";
 import { Button } from "@/components/ui/button";
@@ -30,22 +30,19 @@ export default function FlaggedPage() {
     flagsLoadingMore,
     unreadFlagsCount,
     markFlagReviewed,
-    runComplianceScan,
-    loadFlags,
+    analyzeForFlags,
     loadMoreFlags,
     error,
     refreshAll,
   } = useMockStore();
   const [submittingId, setSubmittingId] = useState<string | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analyzeProgress, setAnalyzeProgress] = useState<{
+    current: number;
+    total: number;
+  } | null>(null);
   const [unreviewedOnly, setUnreviewedOnly] = useState(false);
   const [query, setQuery] = useState("");
-
-  useEffect(() => {
-    if (flags.length === 0 && !flagsLoading) {
-      void loadFlags();
-    }
-  }, [flags.length, flagsLoading, loadFlags]);
 
   const sorted = useMemo(
     () => [...flags].sort((a, b) => b.weight - a.weight),
@@ -72,33 +69,53 @@ export default function FlaggedPage() {
     }
   };
 
-  const handleScan = async () => {
-    setIsScanning(true);
+  const handleAnalyze = async () => {
+    setIsAnalyzing(true);
+    setAnalyzeProgress(null);
     try {
-      await runComplianceScan();
-      toast.success("Compliance scan completed");
+      const { flagsFound } = await analyzeForFlags((progress) => {
+        setAnalyzeProgress({ current: progress.current, total: progress.total });
+      });
+      if (flagsFound > 0) {
+        toast.success(`Analysis complete — ${flagsFound} flag(s) created`);
+      } else {
+        toast.success("Analysis complete — no violations found");
+      }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to run compliance scan");
+      toast.error(err instanceof Error ? err.message : "Failed to analyze transactions");
     } finally {
-      setIsScanning(false);
+      setIsAnalyzing(false);
+      setAnalyzeProgress(null);
     }
   };
 
-  if (flagsLoading && flags.length === 0) {
-    return (
-      <div className="mx-auto flex max-w-3xl flex-col gap-6">
-        <p className="py-8 text-center text-sm text-muted-foreground">Loading flags…</p>
-      </div>
-    );
-  }
+  const progressLabel =
+    analyzeProgress && analyzeProgress.total > 0
+      ? `Analyzing employee ${analyzeProgress.current} of ${analyzeProgress.total}…`
+      : isAnalyzing
+        ? "Starting analysis…"
+        : null;
 
-  if (error && flags.length === 0) {
+  const showEmptyAnalyzeCta =
+    visible.length === 0 &&
+    !query.trim() &&
+    !unreviewedOnly &&
+    !flagsLoading &&
+    !isAnalyzing;
+
+  if (error && flags.length === 0 && !flagsLoading) {
     return (
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 py-8">
         <p className="text-sm text-destructive">{error}</p>
-        <Button variant="outline" onClick={() => void refreshAll()}>
-          Retry
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => void refreshAll()}>
+            Retry
+          </Button>
+          <Button onClick={() => void handleAnalyze()} disabled={isAnalyzing}>
+            <ScanIcon className="size-4" />
+            Analyze anyway
+          </Button>
+        </div>
       </div>
     );
   }
@@ -111,16 +128,17 @@ export default function FlaggedPage() {
             Flagged transactions
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {unreadFlagsCount} unreviewed flag{unreadFlagsCount !== 1 ? "s" : ""} total
-            {flagsHasMore ? " · more available" : ""}
+            {progressLabel ??
+              (flagsLoading && flags.length === 0
+                ? "Loading flags…"
+                : `${unreadFlagsCount} unreviewed flag${unreadFlagsCount !== 1 ? "s" : ""} total${
+                    flagsHasMore ? " · more available" : ""
+                  }`)}
           </p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => void handleScan()}
-          disabled={isScanning}
-        >
-          {isScanning ? "Scanning…" : "Run compliance scan"}
+        <Button onClick={() => void handleAnalyze()} disabled={isAnalyzing}>
+          <ScanIcon className="size-4" />
+          {isAnalyzing ? "Analyzing…" : "Analyze"}
         </Button>
       </div>
 
@@ -138,6 +156,7 @@ export default function FlaggedPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="border-border/60 bg-muted/50 pl-8"
+            disabled={isAnalyzing}
           />
         </div>
         <label className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
@@ -145,21 +164,27 @@ export default function FlaggedPage() {
             size="sm"
             checked={unreviewedOnly}
             onCheckedChange={setUnreviewedOnly}
+            disabled={isAnalyzing}
           />
           Unreviewed only
         </label>
       </div>
 
       <div className="flex flex-col gap-2">
+        {flagsLoading && flags.length === 0 && (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            Loading flags…
+          </p>
+        )}
         {visible.map((flag) => (
           <FlagRow
             key={flag.id}
             flag={flag}
             onReview={handleReview}
-            isSubmitting={submittingId === flag.id}
+            isSubmitting={submittingId === flag.id || isAnalyzing}
           />
         ))}
-        {visible.length === 0 && (
+        {visible.length === 0 && !showEmptyAnalyzeCta && (
           <p className="py-8 text-center text-sm text-muted-foreground">
             {query.trim()
               ? `No flags match "${query.trim()}".`
@@ -168,6 +193,18 @@ export default function FlaggedPage() {
                 : "No flagged transactions."}
           </p>
         )}
+        {showEmptyAnalyzeCta && (
+          <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-border/60 bg-card/50 px-6 py-12 text-center">
+            <p className="text-sm text-muted-foreground">
+              No flagged transactions yet. Run analysis to scan expenses against your
+              policy and create flags when violations are found.
+            </p>
+            <Button onClick={() => void handleAnalyze()} disabled={isAnalyzing}>
+              <ScanIcon className="size-4" />
+              {isAnalyzing ? "Analyzing…" : "Analyze"}
+            </Button>
+          </div>
+        )}
       </div>
 
       {flagsHasMore && (
@@ -175,7 +212,7 @@ export default function FlaggedPage() {
           <Button
             variant="outline"
             onClick={() => void loadMoreFlags()}
-            disabled={flagsLoadingMore}
+            disabled={flagsLoadingMore || isAnalyzing}
           >
             {flagsLoadingMore ? "Loading…" : "Load more"}
           </Button>

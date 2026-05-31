@@ -19,6 +19,7 @@ import {
   runApprovalsPipeline as runApprovalsPipelineApi,
 } from "@/lib/api/approvals";
 import { runComplianceScan as runComplianceScanApi } from "@/lib/api/compliance";
+import { getEmployees } from "@/lib/api/employees";
 import {
   FLAGS_PAGE_SIZE,
   getFlags,
@@ -136,6 +137,13 @@ type MockStore = {
   markNotificationRead: (id: string) => Promise<void>;
   sendAssistantMessage: (text: string) => Promise<void>;
   runComplianceScan: () => Promise<void>;
+  analyzeForFlags: (
+    onProgress?: (progress: {
+      current: number;
+      total: number;
+      flagsFound: number;
+    }) => void
+  ) => Promise<{ flagsFound: number; employeesScanned: number }>;
   runApprovalsPipeline: () => Promise<void>;
   generateReports: () => Promise<void>;
 };
@@ -267,6 +275,8 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
       setFlags(page.items);
       setFlagsHasMore(page.has_more);
       setFlagsUnreadCount(page.unread_count);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load flags");
     } finally {
       setFlagsLoading(false);
     }
@@ -339,6 +349,8 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
       setApprovals(page.items);
       setApprovalsHasMore(page.has_more);
       setPendingApprovalsCount(page.pending_count);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load approvals");
     } finally {
       setApprovalsLoading(false);
     }
@@ -498,6 +510,31 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     ]);
   }, [refreshFlags, refreshTransactions, refreshNotifications]);
 
+  const analyzeForFlags = useCallback(
+    async (
+      onProgress?: (progress: {
+        current: number;
+        total: number;
+        flagsFound: number;
+      }) => void
+    ) => {
+      const roster = await getEmployees();
+      const queue = roster.filter((e) => e.map_transaction_count > 0);
+      let flagsFound = 0;
+
+      for (let i = 0; i < queue.length; i++) {
+        const result = await runComplianceScanApi({ employee_id: queue[i].id });
+        flagsFound += result.flag_count;
+        await refreshFlags();
+        onProgress?.({ current: i + 1, total: queue.length, flagsFound });
+      }
+
+      await Promise.all([refreshTransactions(), refreshNotifications()]);
+      return { flagsFound, employeesScanned: queue.length };
+    },
+    [refreshFlags, refreshTransactions, refreshNotifications]
+  );
+
   const runApprovalsPipeline = useCallback(async () => {
     await runApprovalsPipelineApi({ send: false });
     await Promise.all([refreshApprovals(), refreshNotifications()]);
@@ -632,6 +669,7 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     markNotificationRead,
     sendAssistantMessage,
     runComplianceScan,
+    analyzeForFlags,
     runApprovalsPipeline,
     generateReports,
   };

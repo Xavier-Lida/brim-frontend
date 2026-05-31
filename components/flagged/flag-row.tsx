@@ -10,7 +10,7 @@ import {
   severityLabel,
 } from "@/lib/flags/severity";
 import { cn } from "@/lib/utils";
-import type { TransactionFlag } from "@/lib/types/brim";
+import type { Transaction, TransactionFlag } from "@/lib/types/brim";
 
 type FlagRowProps = {
   flag: TransactionFlag;
@@ -22,7 +22,12 @@ export function FlagRow({ flag, onReview, isSubmitting = false }: FlagRowProps) 
   const [expanded, setExpanded] = useState(false);
   const txn = flag.transaction;
   const employee = flag.employee_name ?? txn?.employee_name ?? "Unknown employee";
-  const flagCount = txn?.flag_count ?? 1;
+  const related =
+    flag.related_transactions ??
+    (flag.related_transaction_ids?.length
+      ? flag.related_transaction_ids.map((id) => ({ id } as Transaction))
+      : []);
+  const incidentCount = related.length > 0 ? related.length : 1;
 
   return (
     <div
@@ -52,13 +57,20 @@ export function FlagRow({ flag, onReview, isSubmitting = false }: FlagRowProps) 
             )}
           />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-foreground">
-              {employee}
-              <span className="ml-2 text-xs font-normal text-muted-foreground">
-                {txn?.merchant_name ?? flag.transaction_id}
-                {txn ? ` · ${formatCad(txn.amount)}` : ""}
-              </span>
-            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="truncate text-sm font-medium text-foreground">
+                {employee}
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  {txn?.merchant_name ?? flag.transaction_id}
+                  {txn ? ` · ${formatCad(txn.amount)}` : ""}
+                </span>
+              </p>
+              {flag.policy_name && (
+                <span className="shrink-0 rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[0.65rem] font-medium text-muted-foreground">
+                  {flag.policy_name}
+                </span>
+              )}
+            </div>
             <p className="truncate text-xs text-muted-foreground">
               {flag.warning_message}
             </p>
@@ -87,10 +99,26 @@ export function FlagRow({ flag, onReview, isSubmitting = false }: FlagRowProps) 
         <div className="flex flex-col gap-3 border-t border-border/50 px-3 py-3 pl-[2.1rem]">
           <p className="text-sm text-foreground">{flag.warning_message}</p>
 
-          {flagCount > 1 && (
-            <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
-              {flagCount} flags on this transaction
-            </p>
+          {incidentCount > 1 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-medium text-foreground/80">
+                Incident · {incidentCount} transactions
+              </p>
+              <ul className="flex flex-col gap-1.5">
+                {(flag.related_transactions ?? []).map((rt) => (
+                  <li
+                    key={rt.id}
+                    className="rounded-md border border-border/50 bg-muted/20 px-2.5 py-1.5 text-xs text-muted-foreground"
+                  >
+                    <span className="font-medium text-foreground">
+                      {rt.merchant_name || rt.id}
+                    </span>
+                    {rt.date ? ` · ${rt.date}` : ""}
+                    {typeof rt.amount === "number" ? ` · ${formatCad(rt.amount)}` : ""}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
 
           {txn && (

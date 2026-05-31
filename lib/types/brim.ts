@@ -54,6 +54,11 @@ export type TransactionFlag = {
   warning_message: string;
   weight: number;
   reviewed: boolean;
+  policy_id?: string;
+  policy_name?: string;
+  incident_id?: string;
+  related_transaction_ids?: string[];
+  related_transactions?: Transaction[];
   transaction?: Transaction;
   employee_name?: string;
 };
@@ -71,6 +76,14 @@ export type PolicyCheck = {
   message?: string;
 };
 
+export type ApprovalFlag = {
+  warning_message: string;
+  weight: number;
+  policy_id?: string | null;
+  policy_name?: string | null;
+  incident_id?: string | null;
+};
+
 export type ApprovalRequest = {
   id: string;
   transaction_id: string;
@@ -78,6 +91,10 @@ export type ApprovalRequest = {
   employee_name: string;
   department_name: string;
   amount: number;
+  merchant_name?: string;
+  transaction_date?: string;
+  merchant_category?: string;
+  city?: string;
   reason: string;
   ai_recommendation: AiRecommendation;
   ai_reasoning: string;
@@ -86,6 +103,9 @@ export type ApprovalRequest = {
   recent_expenses: { date: string; merchant: string; amount: number }[];
   policy_checks?: PolicyCheck[];
   policy_violation_summary?: string;
+  flags?: ApprovalFlag[];
+  incident_id?: string | null;
+  policy_id?: string | null;
 };
 
 export type Notification = {

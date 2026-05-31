@@ -1,6 +1,6 @@
 # Assistant streaming API contract
 
-Backend base URL: `NEXT_PUBLIC_API_URL` (default `http://127.0.0.1:8000`).
+Backend base URL: `BACKEND_URL` (default `http://127.0.0.1:8000`).
 
 Enable SSE on the frontend with:
 

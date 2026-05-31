@@ -4,8 +4,7 @@ import type { AssistantHistoryTurn, AssistantResponse } from "@/lib/api/assistan
 import { askAssistant } from "@/lib/api/assistant";
 import type { FollowUpSuggestion, Visualization } from "@/lib/types/brim";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
+import { API_BASE_URL } from "@/lib/api/config";
 
 export type AssistantStreamEvent =
   | { type: "status"; phase: string; message: string }

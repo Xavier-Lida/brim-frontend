@@ -309,6 +309,10 @@ export const initialFlags: TransactionFlag[] = [
     weight: 4,
     reviewed: false,
     employee_name: "Sarah Chen",
+    policy_id: "pol-default-meals",
+    policy_name: "Meal limits",
+    incident_id: "inc-flag-1",
+    related_transaction_ids: ["txn-1"],
   },
   {
     id: "flag-2",
@@ -318,6 +322,10 @@ export const initialFlags: TransactionFlag[] = [
     weight: 5,
     reviewed: false,
     employee_name: "Sarah Chen",
+    policy_id: "pol-default-approval",
+    policy_name: "Pre-approval threshold",
+    incident_id: "inc-flag-2",
+    related_transaction_ids: ["txn-8", "txn-9", "txn-10-split"],
   },
   {
     id: "flag-3",
@@ -327,6 +335,10 @@ export const initialFlags: TransactionFlag[] = [
     weight: 3,
     reviewed: false,
     employee_name: "Maria Santos",
+    policy_id: "pol-restricted-bars",
+    policy_name: "Restricted merchants",
+    incident_id: "inc-flag-3",
+    related_transaction_ids: ["txn-10"],
   },
   {
     id: "flag-4",
@@ -336,6 +348,10 @@ export const initialFlags: TransactionFlag[] = [
     weight: 4,
     reviewed: false,
     employee_name: "Priya Patel",
+    policy_id: "pol-default-approval",
+    policy_name: "Pre-approval threshold",
+    incident_id: "inc-flag-4",
+    related_transaction_ids: ["txn-19"],
   },
 ];
 
