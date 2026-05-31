@@ -189,6 +189,15 @@ export type CompanySpend = {
   budget: number;
 };
 
+/** A single line item shown on a report card and in the exported PDF. */
+export type ReportTransaction = {
+  date: string;
+  merchant_name: string;
+  merchant_category: string;
+  city: string;
+  amount: number;
+};
+
 export type ExpenseReport = {
   id: string;
   employee_id: string;
@@ -202,6 +211,13 @@ export type ExpenseReport = {
   ai_recommendation: AiRecommendation;
   ai_reasoning: string;
   created_at?: string;
+  // Optional context the backend may provide so the card and PDF read clearly
+  // for a finance manager. All optional so existing payloads still render.
+  employee_name?: string;
+  department_name?: string;
+  currency?: string;
+  transaction_count?: number;
+  transactions?: ReportTransaction[];
 };
 
 export type FlagsPage = {

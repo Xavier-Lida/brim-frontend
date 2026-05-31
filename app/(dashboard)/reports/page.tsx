@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PurchaseMapSection } from "@/components/reports/purchase-map/purchase-map-section";
 import { ReportCard } from "@/components/reports/report-card";
+import { ReportsLegend } from "@/components/reports/reports-legend";
 import { Button } from "@/components/ui/button";
 import { useMockStore } from "@/lib/hooks/use-mock-store";
 
@@ -19,6 +20,7 @@ export default function ReportsPage() {
     loadMoreReports,
   } = useMockStore();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showLegend, setShowLegend] = useState(false);
 
   useEffect(() => {
     if (reports.length === 0 && !reportsLoading) {
@@ -54,11 +56,21 @@ export default function ReportsPage() {
         <div>
           <h2 className="text-xl font-normal text-foreground/90">Expense reports</h2>
           <p className="mt-1 text-sm text-muted-foreground">{reportsSubtitle}</p>
+          <button
+            type="button"
+            onClick={() => setShowLegend((prev) => !prev)}
+            aria-expanded={showLegend}
+            className="mt-1 text-xs font-medium text-primary/80 hover:underline"
+          >
+            {showLegend ? "Hide" : "What do these labels mean?"}
+          </button>
         </div>
         <Button onClick={() => void handleGenerate()} disabled={isGenerating}>
           {isGenerating ? "Generating…" : "Generate reports"}
         </Button>
       </div>
+
+      {showLegend && <ReportsLegend />}
 
       {reportsLoading && reports.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">Loading reports…</p>
