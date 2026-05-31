@@ -64,6 +64,14 @@ export function AssistantChat() {
                   <AssistantVisualization visualization={msg.visualization} />
                 </div>
               )}
+              {msg.sql && (
+                <details className="max-w-lg text-xs text-muted-foreground">
+                  <summary className="cursor-pointer">SQL query</summary>
+                  <pre className="mt-1 overflow-x-auto rounded-md bg-muted/50 p-2">
+                    {msg.sql}
+                  </pre>
+                </details>
+              )}
             </div>
           ))}
           {loading && (

@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { askAssistant } from "@/lib/api/assistant";
 import {
   decideApproval as decideApprovalApi,
   getApprovals,
@@ -17,6 +18,18 @@ import {
 import { runComplianceScan as runComplianceScanApi } from "@/lib/api/compliance";
 import { getFlags, markFlagReviewed as markFlagReviewedApi } from "@/lib/api/flags";
 import {
+  getNotifications,
+  markNotificationReadApi,
+} from "@/lib/api/notifications";
+import {
+  confirmPolicyImport,
+  createPolicy,
+  deletePolicy as deletePolicyApi,
+  getPolicies,
+  importPoliciesPreview,
+  updatePolicy,
+} from "@/lib/api/policies";
+import {
   generateReports as generateReportsApi,
   getReports,
 } from "@/lib/api/reports";
@@ -24,26 +37,18 @@ import { getTransactions } from "@/lib/api/transactions";
 import {
   companySpend,
   initialAssistantMessages,
-  initialNotifications,
-  initialPolicies,
   workspaceUser,
 } from "@/lib/mocks/fixtures";
-import {
-  analyzePolicyImport,
-  createPolicyFromDraft,
-  createPolicyFromForm,
-  generateAssistantResponse,
-  generateId,
-} from "@/lib/mocks/services";
+import { generateId } from "@/lib/mocks/services";
 import type {
   ApprovalRequest,
   ApprovalStatus,
   AssistantMessage,
   ExpenseReport,
-  ImportedPolicyDraft,
   Notification,
   Policy,
-  PolicyCategory,
+  PolicyImportDraft,
+  PolicyRequirements,
   Transaction,
   TransactionFlag,
 } from "@/lib/types/brim";
@@ -70,22 +75,24 @@ type MockStore = {
   refreshFlags: () => Promise<void>;
   refreshApprovals: () => Promise<void>;
   refreshReports: () => Promise<void>;
+  refreshPolicies: () => Promise<void>;
+  refreshNotifications: () => Promise<void>;
   refreshAll: () => Promise<void>;
-  togglePolicy: (id: string) => void;
-  deletePolicy: (id: string) => void;
+  togglePolicy: (id: string) => Promise<void>;
+  deletePolicy: (id: string) => Promise<void>;
   addPolicy: (data: {
     policy_name: string;
-    value: string;
-    description: string;
-    reference: string;
-    scope: string;
-    category: PolicyCategory;
-  }) => void;
-  importPolicies: (drafts: ImportedPolicyDraft[]) => void;
-  analyzeImport: (content: string) => Promise<ImportedPolicyDraft[]>;
+    policy_requirements: PolicyRequirements;
+    effective_date?: string;
+  }) => Promise<void>;
+  importPolicies: (drafts: PolicyImportDraft[]) => Promise<void>;
+  analyzeImport: (input: {
+    content?: string;
+    pdf_base64?: string;
+  }) => Promise<PolicyImportDraft[]>;
   decideApproval: (id: string, status: ApprovalStatus) => Promise<void>;
   markFlagReviewed: (id: string) => Promise<void>;
-  markNotificationRead: (id: string) => void;
+  markNotificationRead: (id: string) => Promise<void>;
   sendAssistantMessage: (text: string) => Promise<void>;
   runComplianceScan: () => Promise<void>;
   runApprovalsPipeline: () => Promise<void>;
@@ -95,12 +102,12 @@ type MockStore = {
 const MockStoreContext = createContext<MockStore | null>(null);
 
 export function MockStoreProvider({ children }: { children: ReactNode }) {
-  const [policies, setPolicies] = useState(initialPolicies);
+  const [policies, setPolicies] = useState<Policy[]>([]);
   const [approvals, setApprovals] = useState<ApprovalRequest[]>([]);
   const [flags, setFlags] = useState<TransactionFlag[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [reports, setReports] = useState<ExpenseReport[]>([]);
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [assistantMessages, setAssistantMessages] = useState(
     initialAssistantMessages
   );
@@ -128,6 +135,16 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     setReports(data);
   }, []);
 
+  const refreshPolicies = useCallback(async () => {
+    const data = await getPolicies();
+    setPolicies(data);
+  }, []);
+
+  const refreshNotifications = useCallback(async () => {
+    const data = await getNotifications();
+    setNotifications(data);
+  }, []);
+
   const refreshAll = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -137,13 +154,22 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
         refreshFlags(),
         refreshApprovals(),
         refreshReports(),
+        refreshPolicies(),
+        refreshNotifications(),
       ]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load data");
     } finally {
       setIsLoading(false);
     }
-  }, [refreshTransactions, refreshFlags, refreshApprovals, refreshReports]);
+  }, [
+    refreshTransactions,
+    refreshFlags,
+    refreshApprovals,
+    refreshReports,
+    refreshPolicies,
+    refreshNotifications,
+  ]);
 
   useEffect(() => {
     void refreshAll();
@@ -169,48 +195,60 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     [policies]
   );
 
-  const togglePolicy = useCallback((id: string) => {
+  const togglePolicy = useCallback(
+    async (id: string) => {
+      const policy = policies.find((p) => p.id === id);
+      if (!policy) return;
+      const updated = await updatePolicy(id, { active: !policy.active });
+      setPolicies((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, ...updated } : p))
+      );
+    },
+    [policies]
+  );
+
+  const deletePolicy = useCallback(async (id: string) => {
+    await deletePolicyApi(id);
     setPolicies((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, active: !p.active } : p))
+      prev.map((p) => (p.id === id ? { ...p, active: false } : p))
     );
   }, []);
 
-  const deletePolicy = useCallback((id: string) => {
-    setPolicies((prev) => prev.filter((p) => p.id !== id));
-  }, []);
-
   const addPolicy = useCallback(
-    (data: {
+    async (data: {
       policy_name: string;
-      value: string;
-      description: string;
-      reference: string;
-      scope: string;
-      category: PolicyCategory;
+      policy_requirements: PolicyRequirements;
+      effective_date?: string;
     }) => {
-      const policy: Policy = {
-        id: generateId("pol"),
-        ...createPolicyFromForm(data),
-      };
-      setPolicies((prev) => [policy, ...prev]);
+      const created = await createPolicy(data);
+      setPolicies((prev) => [created, ...prev]);
     },
     []
   );
 
-  const importPolicies = useCallback((drafts: ImportedPolicyDraft[]) => {
-    const newPolicies: Policy[] = drafts.map((draft) => ({
-      id: generateId("pol"),
-      ...createPolicyFromDraft(draft),
-    }));
-    setPolicies((prev) => [...newPolicies, ...prev]);
+  const importPolicies = useCallback(async (drafts: PolicyImportDraft[]) => {
+    const result = await confirmPolicyImport(drafts);
+    setPolicies((prev) => [...result.policies, ...prev]);
   }, []);
+
+  const analyzeImport = useCallback(
+    async (input: { content?: string; pdf_base64?: string }) => {
+      const result = await importPoliciesPreview(input);
+      return result.policies;
+    },
+    []
+  );
 
   const decideApproval = useCallback(
     async (id: string, status: ApprovalStatus) => {
       await decideApprovalApi(id, { status });
-      await Promise.all([refreshApprovals(), refreshTransactions()]);
+      await Promise.all([
+        refreshApprovals(),
+        refreshTransactions(),
+        refreshNotifications(),
+      ]);
     },
-    [refreshApprovals, refreshTransactions]
+    [refreshApprovals, refreshTransactions, refreshNotifications]
   );
 
   const markFlagReviewed = useCallback(
@@ -222,21 +260,26 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
   );
 
   const runComplianceScan = useCallback(async () => {
-    await runComplianceScanApi({ mock_llm: true });
-    await Promise.all([refreshFlags(), refreshTransactions()]);
-  }, [refreshFlags, refreshTransactions]);
+    await runComplianceScanApi();
+    await Promise.all([
+      refreshFlags(),
+      refreshTransactions(),
+      refreshNotifications(),
+    ]);
+  }, [refreshFlags, refreshTransactions, refreshNotifications]);
 
   const runApprovalsPipeline = useCallback(async () => {
-    await runApprovalsPipelineApi({ mock_llm: true, send: false });
-    await refreshApprovals();
-  }, [refreshApprovals]);
+    await runApprovalsPipelineApi({ send: false });
+    await Promise.all([refreshApprovals(), refreshNotifications()]);
+  }, [refreshApprovals, refreshNotifications]);
 
   const generateReports = useCallback(async () => {
-    await generateReportsApi({}, { mock_llm: true });
+    await generateReportsApi({});
     await refreshReports();
   }, [refreshReports]);
 
-  const markNotificationRead = useCallback((id: string) => {
+  const markNotificationRead = useCallback(async (id: string) => {
+    await markNotificationReadApi(id);
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
@@ -251,14 +294,32 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     };
     setAssistantMessages((prev) => [...prev, userMessage]);
 
-    const response = await generateAssistantResponse(text);
+    const history = assistantMessages
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .slice(-6)
+      .reduce<{ question: string; summary: string }[]>((acc, msg, idx, arr) => {
+        if (msg.role === "user") {
+          const next = arr[idx + 1];
+          acc.push({
+            question: msg.text,
+            summary: next?.role === "assistant" ? next.text : "",
+          });
+        }
+        return acc;
+      }, []);
+
+    const response = await askAssistant(text, history);
     const assistantMessage: AssistantMessage = {
       id: generateId("msg"),
-      ...response,
+      role: "assistant",
+      text: response.text,
+      visualization: response.visualization,
+      followUpSuggestions: response.followUpSuggestions,
+      sql: response.sql,
       created_at: new Date().toISOString(),
     };
     setAssistantMessages((prev) => [...prev, assistantMessage]);
-  }, []);
+  }, [assistantMessages]);
 
   const value: MockStore = {
     policies,
@@ -282,12 +343,14 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     refreshFlags,
     refreshApprovals,
     refreshReports,
+    refreshPolicies,
+    refreshNotifications,
     refreshAll,
     togglePolicy,
     deletePolicy,
     addPolicy,
     importPolicies,
-    analyzeImport: analyzePolicyImport,
+    analyzeImport,
     decideApproval,
     markFlagReviewed,
     markNotificationRead,

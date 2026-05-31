@@ -25,53 +25,100 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useMockStore } from "@/lib/hooks/use-mock-store";
-import type { ImportedPolicyDraft } from "@/lib/types/brim";
+import type { PolicyImportDraft } from "@/lib/types/brim";
+import { fileToBase64 } from "@/lib/utils/pdf";
 
 export function ImportPolicyDialog() {
   const { analyzeImport, importPolicies } = useMockStore();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"upload" | "preview">("upload");
   const [content, setContent] = useState("");
-  const [drafts, setDrafts] = useState<ImportedPolicyDraft[]>([]);
+  const [pdfBase64, setPdfBase64] = useState<string | null>(null);
+  const [pdfFileName, setPdfFileName] = useState<string | null>(null);
+  const [drafts, setDrafts] = useState<PolicyImportDraft[]>([]);
   const [loading, setLoading] = useState(false);
 
   const reset = () => {
     setStep("upload");
     setContent("");
+    setPdfBase64(null);
+    setPdfFileName(null);
     setDrafts([]);
     setLoading(false);
   };
 
+  const canAnalyze = Boolean(pdfBase64 || content.trim());
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      toast.error("Please select a PDF file");
+      return;
+    }
+    try {
+      const base64 = await fileToBase64(file);
+      setPdfBase64(base64);
+      setPdfFileName(file.name);
+      setContent("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to read PDF");
+    }
+  };
+
   const handleAnalyze = async () => {
-    if (!content.trim()) {
-      toast.error("Paste policy text or upload content first");
+    if (!canAnalyze) {
+      toast.error("Upload a PDF or paste policy text first");
       return;
     }
     setLoading(true);
     try {
-      const result = await analyzeImport(content);
+      const result = pdfBase64
+        ? await analyzeImport({ pdf_base64: pdfBase64 })
+        : await analyzeImport({ content: content.trim() });
       setDrafts(result);
       setStep("preview");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Import analysis failed");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleConfirm = () => {
-    importPolicies(drafts);
-    toast.success(`${drafts.length} rules imported`);
-    setOpen(false);
-    reset();
+  const handleConfirm = async () => {
+    setLoading(true);
+    try {
+      await importPolicies(drafts);
+      toast.success(`${drafts.length} rules imported`);
+      setOpen(false);
+      reset();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Import failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updateDraft = (
-    index: number,
-    field: keyof ImportedPolicyDraft,
-    value: string
-  ) => {
+  const updateDraftName = (index: number, policy_name: string) => {
     setDrafts((prev) =>
-      prev.map((d, i) => (i === index ? { ...d, [field]: value } : d))
+      prev.map((d, i) => (i === index ? { ...d, policy_name } : d))
     );
+  };
+
+  const formatRequirements = (draft: PolicyImportDraft) => {
+    const req = draft.policy_requirements;
+    const parts: string[] = [];
+    if (req.approval_threshold_cad != null) {
+      parts.push(`Threshold: $${req.approval_threshold_cad}`);
+    }
+    const limits = Object.entries(req.category_limits_cad ?? {});
+    if (limits.length > 0) {
+      parts.push(
+        limits.map(([cat, amt]) => `${cat}: $${amt}`).join("; ")
+      );
+    }
+    if (req.notes) parts.push(req.notes.slice(0, 80));
+    return parts.join(" · ") || "—";
   };
 
   return (
@@ -92,39 +139,46 @@ export function ImportPolicyDialog() {
         <DialogHeader>
           <DialogTitle>Import expense policy</DialogTitle>
           <DialogDescription>
-            Upload a PDF or paste policy text. Brim will extract rules for your
-            review before saving.
+            Upload a PDF or paste policy text. Brim extracts structured JSONB
+            rules for your review before saving to Supabase.
           </DialogDescription>
         </DialogHeader>
 
         {step === "upload" ? (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="policy-file">PDF upload (mock)</Label>
+              <Label htmlFor="policy-file">PDF upload</Label>
               <Input
                 id="policy-file"
                 type="file"
-                accept=".pdf,.txt"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    setContent(`[Uploaded: ${file.name}] Expense policy document content...`);
-                  }
-                }}
+                accept=".pdf,application/pdf"
+                onChange={handleFileChange}
               />
+              {pdfFileName && (
+                <p className="text-xs text-muted-foreground">
+                  Selected: {pdfFileName}
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="policy-text">Or paste policy text</Label>
               <Textarea
                 id="policy-text"
                 value={content}
-                onChange={(e) => setContent(e.target.value)}
+                onChange={(e) => {
+                  setContent(e.target.value);
+                  if (e.target.value.trim()) {
+                    setPdfBase64(null);
+                    setPdfFileName(null);
+                  }
+                }}
                 placeholder="Paste your expense policy document here..."
                 rows={6}
+                disabled={Boolean(pdfBase64)}
               />
             </div>
             <DialogFooter>
-              <Button onClick={handleAnalyze} disabled={loading}>
+              <Button onClick={handleAnalyze} disabled={loading || !canAnalyze}>
                 {loading ? "Analyzing..." : "Analyze with AI"}
               </Button>
             </DialogFooter>
@@ -138,9 +192,9 @@ export function ImportPolicyDialog() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Rule</TableHead>
-                    <TableHead>Value</TableHead>
-                    <TableHead>Scope</TableHead>
+                    <TableHead>Rule name</TableHead>
+                    <TableHead>Requirements</TableHead>
+                    <TableHead>Effective</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -149,29 +203,15 @@ export function ImportPolicyDialog() {
                       <TableCell>
                         <Input
                           value={draft.policy_name}
-                          onChange={(e) =>
-                            updateDraft(i, "policy_name", e.target.value)
-                          }
+                          onChange={(e) => updateDraftName(i, e.target.value)}
                           className="h-8"
                         />
                       </TableCell>
-                      <TableCell>
-                        <Input
-                          value={draft.value}
-                          onChange={(e) =>
-                            updateDraft(i, "value", e.target.value)
-                          }
-                          className="h-8"
-                        />
+                      <TableCell className="max-w-xs text-xs text-muted-foreground">
+                        {formatRequirements(draft)}
                       </TableCell>
-                      <TableCell>
-                        <Input
-                          value={draft.scope}
-                          onChange={(e) =>
-                            updateDraft(i, "scope", e.target.value)
-                          }
-                          className="h-8"
-                        />
+                      <TableCell className="text-sm">
+                        {draft.effective_date}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -182,8 +222,8 @@ export function ImportPolicyDialog() {
               <Button variant="outline" onClick={() => setStep("upload")}>
                 Back
               </Button>
-              <Button onClick={handleConfirm}>
-                Confirm import ({drafts.length})
+              <Button onClick={handleConfirm} disabled={loading}>
+                {loading ? "Importing..." : `Confirm import (${drafts.length})`}
               </Button>
             </DialogFooter>
           </div>

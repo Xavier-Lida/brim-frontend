@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api/client";
+import { mockLlm } from "@/lib/api/config";
 
 type ComplianceScanParams = {
   mock_llm?: boolean;
@@ -25,7 +26,7 @@ export function runComplianceScan(params: ComplianceScanParams = {}) {
   return apiFetch<ComplianceScanResult>("/api/compliance/scan", {
     method: "POST",
     params: {
-      mock_llm: params.mock_llm ?? true,
+      mock_llm: params.mock_llm ?? mockLlm,
       limit: params.limit,
     },
   });

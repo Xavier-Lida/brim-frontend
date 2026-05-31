@@ -22,12 +22,18 @@ import {
 import type { Policy } from "@/lib/types/brim";
 import { TrashIcon } from "@phosphor-icons/react";
 
-const categoryIcons = {
-  spend: CurrencyDollarIcon,
-  approval: ShieldIcon,
-  travel: CurrencyDollarIcon,
-  restriction: WarningIcon,
-};
+function PolicyIcon({ req }: { req: Policy["policy_requirements"] }) {
+  if (
+    (req.restricted_categories?.length ?? 0) > 0 ||
+    (req.restricted_merchants?.length ?? 0) > 0
+  ) {
+    return <WarningIcon />;
+  }
+  if (req.approval_threshold_cad != null) {
+    return <ShieldIcon />;
+  }
+  return <CurrencyDollarIcon />;
+}
 
 type PolicyRuleCardProps = {
   policy: Policy;
@@ -40,25 +46,51 @@ export function PolicyRuleCard({
   onToggle,
   onDelete,
 }: PolicyRuleCardProps) {
-  const Icon =
-    categoryIcons[policy.policy_requirements.category] ?? CurrencyDollarIcon;
   const req = policy.policy_requirements;
+  const categoryEntries = Object.entries(req.category_limits_cad ?? {});
 
   return (
     <div className="flex items-start gap-4 rounded-xl border border-border/50 bg-card p-6 shadow-none">
       <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-soft text-primary/70">
-        <Icon />
+        <PolicyIcon req={req} />
       </div>
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-sm font-medium text-foreground">
             {policy.policy_name}
           </h3>
-          <Badge variant="secondary">{req.scope}</Badge>
+          <Badge variant="secondary">
+            {policy.active ? "Active" : "Inactive"}
+          </Badge>
+          <Badge variant="outline">{policy.effective_date}</Badge>
         </div>
-        <p className="text-base font-medium text-primary/80">{req.value}</p>
-        <p className="text-sm text-muted-foreground">{req.description}</p>
-        <p className="text-xs text-muted-foreground">{req.reference}</p>
+        {req.approval_threshold_cad != null && (
+          <p className="text-base font-medium text-primary/80">
+            Pre-approval above ${req.approval_threshold_cad} CAD
+          </p>
+        )}
+        {categoryEntries.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {categoryEntries.map(([category, limit]) => (
+              <Badge key={category} variant="secondary" className="font-normal">
+                {category}: ${limit} max
+              </Badge>
+            ))}
+          </div>
+        )}
+        {(req.restricted_categories?.length ?? 0) > 0 && (
+          <p className="text-sm text-muted-foreground">
+            Blocked categories: {req.restricted_categories?.join(", ")}
+          </p>
+        )}
+        {(req.restricted_merchants?.length ?? 0) > 0 && (
+          <p className="text-sm text-muted-foreground">
+            Blocked merchants: {req.restricted_merchants?.join(", ")}
+          </p>
+        )}
+        {req.notes && (
+          <p className="text-sm text-muted-foreground">{req.notes}</p>
+        )}
       </div>
       <div className="flex shrink-0 items-center gap-2">
         <Switch
@@ -73,16 +105,16 @@ export function PolicyRuleCard({
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete this rule?</AlertDialogTitle>
+              <AlertDialogTitle>Deactivate this rule?</AlertDialogTitle>
               <AlertDialogDescription>
-                &ldquo;{policy.policy_name}&rdquo; will be removed from active
-                policies. This action cannot be undone in the mock environment.
+                &ldquo;{policy.policy_name}&rdquo; will be deactivated. Compliance
+                scans will no longer apply this rule.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={() => onDelete(policy.id)}>
-                Delete
+                Deactivate
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

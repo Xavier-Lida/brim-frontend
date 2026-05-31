@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api/client";
+import { mockLlm } from "@/lib/api/config";
 import type { ApprovalRequest, ApprovalStatus } from "@/lib/types/brim";
 
 export function getApprovals() {
@@ -37,7 +38,7 @@ export function runApprovalsPipeline(params: RunApprovalsParams = {}) {
   return apiFetch<RunApprovalsResult>("/api/approvals/run", {
     method: "POST",
     params: {
-      mock_llm: params.mock_llm ?? true,
+      mock_llm: params.mock_llm ?? mockLlm,
       send: params.send ?? false,
       threshold: params.threshold,
     },

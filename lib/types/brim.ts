@@ -1,11 +1,9 @@
-export type PolicyCategory = "spend" | "approval" | "travel" | "restriction";
-
 export type PolicyRequirements = {
-  value: string;
-  description: string;
-  reference: string;
-  scope: string;
-  category: PolicyCategory;
+  approval_threshold_cad?: number;
+  category_limits_cad?: Record<string, number>;
+  restricted_categories?: string[];
+  restricted_merchants?: string[];
+  notes?: string;
 };
 
 export type Policy = {
@@ -15,6 +13,9 @@ export type Policy = {
   effective_date: string;
   active: boolean;
 };
+
+/** Policy row returned by import preview (no id yet). */
+export type PolicyImportDraft = Omit<Policy, "id"> & { id?: string };
 
 export type Employee = {
   id: string;
@@ -70,7 +71,7 @@ export type ApprovalRequest = {
 
 export type Notification = {
   id: string;
-  type: "flag" | "approval" | "report";
+  type: "flag" | "approval" | "decision";
   reference_id: string;
   message: string;
   read: boolean;
@@ -91,6 +92,7 @@ export type AssistantMessage = {
   text: string;
   visualization?: Visualization;
   followUpSuggestions?: string[];
+  sql?: string;
   created_at: string;
 };
 
@@ -104,15 +106,6 @@ export type CompanySpend = {
   period: string;
   spent: number;
   budget: number;
-};
-
-export type ImportedPolicyDraft = {
-  policy_name: string;
-  value: string;
-  description: string;
-  reference: string;
-  scope: string;
-  category: PolicyCategory;
 };
 
 export type ExpenseReport = {

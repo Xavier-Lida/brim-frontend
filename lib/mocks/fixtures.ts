@@ -23,87 +23,36 @@ export const companySpend: CompanySpend = {
 
 export const initialPolicies: Policy[] = [
   {
-    id: "pol-1",
-    policy_name: "Individual meal limit",
+    id: "pol-default-meals",
+    policy_name: "Meal limits",
     policy_requirements: {
-      value: "$75 / person / meal",
-      description:
-        "Team meals exempt up to $1,000. Alcohol billed separately and capped at 20% of meal total.",
-      reference: "policy.pdf §2.1",
-      scope: "All",
-      category: "spend",
+      category_limits_cad: {
+        "Repas Personnel": 75,
+        "Repas Client": 250,
+      },
+      notes: "Solo meals capped at $75 CAD; client/team meals at $250 CAD.",
     },
     effective_date: "2025-01-01",
     active: true,
   },
   {
-    id: "pol-2",
-    policy_name: "Hardware approval threshold",
+    id: "pol-default-approval",
+    policy_name: "Pre-approval threshold",
     policy_requirements: {
-      value: "Pre-approval > $500",
-      description:
-        "IT equipment and peripherals require manager sign-off before purchase.",
-      reference: "policy.pdf §3.4",
-      scope: "All",
-      category: "approval",
+      approval_threshold_cad: 500,
+      notes: "Purchases of $500 CAD or more require manager pre-approval.",
     },
     effective_date: "2025-01-01",
     active: true,
   },
   {
-    id: "pol-3",
-    policy_name: "Conference cap",
-    policy_requirements: {
-      value: "$1,500 / event",
-      description:
-        "Includes registration, travel, and lodging. Multi-day events prorated.",
-      reference: "policy.pdf §4.2",
-      scope: "All",
-      category: "travel",
-    },
-    effective_date: "2025-01-01",
-    active: true,
-  },
-  {
-    id: "pol-4",
-    policy_name: "Single-trip travel limit",
-    policy_requirements: {
-      value: "$3,000 / trip",
-      description:
-        "Flights, hotels, ground transport, and per diem combined per trip.",
-      reference: "policy.pdf §4.5",
-      scope: "All",
-      category: "travel",
-    },
-    effective_date: "2025-01-01",
-    active: true,
-  },
-  {
-    id: "pol-5",
+    id: "pol-restricted-bars",
     policy_name: "Restricted merchants",
     policy_requirements: {
-      value: "Alcohol-only venues blocked",
-      description:
-        "Transactions at merchants with MCC 5813 (bars) are auto-flagged.",
-      reference: "policy.pdf §2.8",
-      scope: "All",
-      category: "restriction",
+      restricted_merchants: ["bar", "nightclub"],
+      notes: "Alcohol-only venues and nightclubs are blocked.",
     },
     effective_date: "2025-01-01",
-    active: true,
-  },
-  {
-    id: "pol-6",
-    policy_name: "Software subscription limit",
-    policy_requirements: {
-      value: "$200 / month / seat",
-      description:
-        "SaaS tools require IT review if exceeding monthly cap per license.",
-      reference: "policy.pdf §3.1",
-      scope: "All",
-      category: "spend",
-    },
-    effective_date: "2025-03-01",
     active: true,
   },
 ];
@@ -521,29 +470,30 @@ export const initialAssistantMessages: AssistantMessage[] = [
 export const mockImportPreview = [
   {
     policy_name: "Client entertainment cap",
-    value: "$250 / person / event",
-    description:
-      "Client dinners and entertainment capped per attendee. Receipts required for groups over 4.",
-    reference: "policy.pdf §2.4",
-    scope: "Sales",
-    category: "spend" as const,
+    policy_requirements: {
+      category_limits_cad: { "Repas Client": 250 },
+      notes:
+        "Client dinners capped per attendee. Receipts required for groups over 4.",
+    },
+    effective_date: "2025-01-01",
+    active: true,
   },
   {
     policy_name: "International travel pre-approval",
-    value: "Pre-approval required",
-    description:
-      "All international trips require VP sign-off 14 days before departure.",
-    reference: "policy.pdf §4.8",
-    scope: "All",
-    category: "travel" as const,
+    policy_requirements: {
+      approval_threshold_cad: 1500,
+      notes: "All international trips require VP sign-off 14 days before departure.",
+    },
+    effective_date: "2025-01-01",
+    active: true,
   },
   {
     policy_name: "Rideshare daily limit",
-    value: "$75 / day",
-    description:
-      "Uber/Lyft expenses capped per employee per calendar day.",
-    reference: "policy.pdf §4.1",
-    scope: "All",
-    category: "spend" as const,
+    policy_requirements: {
+      category_limits_cad: { "Transport Local": 75 },
+      notes: "Uber/Lyft expenses capped per employee per calendar day.",
+    },
+    effective_date: "2025-01-01",
+    active: true,
   },
 ];

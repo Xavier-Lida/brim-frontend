@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api/client";
+import { mockLlm } from "@/lib/api/config";
 import type { ExpenseReport } from "@/lib/types/brim";
 
 export function getReports() {
@@ -33,7 +34,7 @@ export function generateReports(
     method: "POST",
     body,
     params: {
-      mock_llm: params.mock_llm ?? true,
+      mock_llm: params.mock_llm ?? mockLlm,
       gap_days: params.gap_days,
     },
   });

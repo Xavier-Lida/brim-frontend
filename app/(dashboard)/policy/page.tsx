@@ -14,14 +14,22 @@ export default function PolicyPage() {
     deletePolicy,
   } = useMockStore();
 
-  const handleToggle = (id: string) => {
-    togglePolicy(id);
-    toast.success("Rule updated");
+  const handleToggle = async (id: string) => {
+    try {
+      await togglePolicy(id);
+      toast.success("Rule updated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Update failed");
+    }
   };
 
-  const handleDelete = (id: string) => {
-    deletePolicy(id);
-    toast.success("Rule deleted");
+  const handleDelete = async (id: string) => {
+    try {
+      await deletePolicy(id);
+      toast.success("Rule deactivated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Delete failed");
+    }
   };
 
   return (
@@ -32,8 +40,8 @@ export default function PolicyPage() {
             Expense policy
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            The rules Brim checks every transaction against. {activePoliciesCount}{" "}
-            active · scans run in real time
+            Structured rules Brim checks every transaction against.{" "}
+            {activePoliciesCount} active · synced with backend
           </p>
         </div>
         <div className="flex shrink-0 gap-2">
@@ -53,7 +61,7 @@ export default function PolicyPage() {
         ))}
         {policies.length === 0 && (
           <p className="py-12 text-center text-sm text-muted-foreground">
-            No active rules. Add a rule or import a policy document.
+            No policies loaded. Add a rule or import a policy document.
           </p>
         )}
       </div>
