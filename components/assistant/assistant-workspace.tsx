@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { AssistantToolbar } from "@/components/assistant/assistant-toolbar";
 import { AssistantCenterStage } from "@/components/assistant/assistant-center-stage";
 import { AssistantChatPanel } from "@/components/assistant/assistant-chat-panel";
@@ -10,33 +11,57 @@ import { cn } from "@/lib/utils";
 export function AssistantWorkspace() {
   const {
     assistantSession,
-    assistantActiveVisualization,
+    assistantLatestVisualization,
+    assistantVisualizationHistory,
     assistantIsSending,
     assistantVizFullscreenOpen,
     setAssistantVizFullscreenOpen,
-    setAssistantContextPreset,
-    setAssistantDepartments,
     clearAssistantChat,
     selectAssistantVisualization,
     sendAssistantMessage,
   } = useMockStore();
 
-  const { messages, context, layoutMode, activeVisualizationId } =
-    assistantSession;
+  const { messages, layoutMode, activeVisualizationId } = assistantSession;
+
+  const [draftMessage, setDraftMessage] = useState("");
+  const [pendingChoice, setPendingChoice] = useState<string | null>(null);
+  const [scrollToVizId, setScrollToVizId] = useState<string | undefined>();
 
   const userMessageCount = messages.filter((m) => m.role === "user").length;
   const showStarters = userMessageCount === 0;
 
+  const handleStarterSelect = (prompt: string | null) => {
+    setPendingChoice(prompt);
+    setDraftMessage(prompt ?? "");
+  };
+
+  const handleSend = (text: string) => {
+    setDraftMessage("");
+    setPendingChoice(null);
+    sendAssistantMessage(text);
+  };
+
+  const handleNewChat = () => {
+    setDraftMessage("");
+    setPendingChoice(null);
+    setScrollToVizId(undefined);
+    clearAssistantChat();
+  };
+
+  const handleSelectVisualization = (messageId: string) => {
+    selectAssistantVisualization(messageId);
+    setScrollToVizId(messageId);
+  };
+
   return (
     <div className="flex h-[calc(100vh-7rem)] flex-col gap-3">
       <AssistantToolbar
-        context={context}
         layoutMode={layoutMode}
-        onPresetChange={setAssistantContextPreset}
-        onDepartmentsChange={setAssistantDepartments}
-        onNewChat={clearAssistantChat}
+        onNewChat={handleNewChat}
         onExpandViz={() => setAssistantVizFullscreenOpen(true)}
-        canExpandViz={layoutMode === "split" && !!assistantActiveVisualization}
+        canExpandViz={
+          layoutMode === "split" && !!assistantLatestVisualization
+        }
       />
 
       <div
@@ -50,9 +75,12 @@ export function AssistantWorkspace() {
         {layoutMode === "split" && (
           <AssistantCenterStage
             layoutMode={layoutMode}
-            visualization={assistantActiveVisualization}
+            visualizationHistory={assistantVisualizationHistory}
+            activeVisualizationId={activeVisualizationId}
+            scrollToMessageId={scrollToVizId}
             showStarters={false}
-            onStarterSelect={sendAssistantMessage}
+            selectedStarter={pendingChoice}
+            onStarterSelect={handleStarterSelect}
             startersDisabled={assistantIsSending}
             className="min-h-[40vh] md:min-h-0 md:border-r md:border-border/40"
           />
@@ -61,8 +89,10 @@ export function AssistantWorkspace() {
         {layoutMode === "centered" && (
           <AssistantCenterStage
             layoutMode={layoutMode}
+            visualizationHistory={assistantVisualizationHistory}
             showStarters={showStarters}
-            onStarterSelect={sendAssistantMessage}
+            selectedStarter={pendingChoice}
+            onStarterSelect={handleStarterSelect}
             startersDisabled={assistantIsSending}
           />
         )}
@@ -72,8 +102,12 @@ export function AssistantWorkspace() {
           isSending={assistantIsSending}
           layoutMode={layoutMode}
           activeVisualizationId={activeVisualizationId}
-          onSend={sendAssistantMessage}
-          onSelectVisualization={selectAssistantVisualization}
+          onSend={handleSend}
+          onSelectVisualization={handleSelectVisualization}
+          input={draftMessage}
+          onInputChange={setDraftMessage}
+          pendingChoice={pendingChoice}
+          onPendingChoiceChange={setPendingChoice}
           className={cn(
             layoutMode === "split" &&
               "border-t border-border/40 md:border-t-0 md:shrink-0"
@@ -84,7 +118,7 @@ export function AssistantWorkspace() {
       <VizFullscreenDialog
         open={assistantVizFullscreenOpen}
         onOpenChange={setAssistantVizFullscreenOpen}
-        visualization={assistantActiveVisualization}
+        visualization={assistantLatestVisualization}
       />
     </div>
   );

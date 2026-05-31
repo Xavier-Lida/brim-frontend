@@ -49,7 +49,7 @@ const pieColors = [
 
 type AssistantVisualizationProps = {
   visualization: Visualization;
-  size?: "default" | "stage";
+  size?: "default" | "stage" | "fullscreen";
 };
 
 export function AssistantVisualization({
@@ -57,13 +57,30 @@ export function AssistantVisualization({
   size = "default",
 }: AssistantVisualizationProps) {
   const { type, title, data } = visualization;
-  const chartHeight = size === "stage" ? "h-80 md:h-96" : "h-48";
+  const chartHeight =
+    size === "fullscreen"
+      ? "aspect-auto h-[calc(100vh-14rem)] max-h-none w-full"
+      : size === "stage"
+        ? "aspect-auto h-[min(50vh,20rem)] max-h-[50vh] w-full"
+        : "h-48";
+  const tableScrollClass =
+    size === "fullscreen"
+      ? "max-h-[calc(100vh-14rem)] overflow-y-auto"
+      : size === "stage"
+        ? "max-h-[50vh] overflow-y-auto"
+        : undefined;
   const kpiValueClass =
-    size === "stage" ? "text-4xl md:text-5xl" : "text-2xl";
+    size === "fullscreen"
+      ? "text-5xl md:text-6xl"
+      : size === "stage"
+        ? "text-4xl md:text-5xl"
+        : "text-2xl";
   const wrapperClass =
-    size === "stage"
-      ? "rounded-xl border border-border/50 bg-card p-6 md:p-8"
-      : "rounded-xl border border-border/50 bg-card p-4";
+    size === "fullscreen"
+      ? "flex min-h-0 flex-1 flex-col rounded-xl border border-border/50 bg-card p-4 md:p-6"
+      : size === "stage"
+        ? "rounded-xl border border-border/50 bg-card p-6 md:p-8"
+        : "rounded-xl border border-border/50 bg-card p-4";
 
   const emptyState = (
     <div className={wrapperClass}>
@@ -99,24 +116,26 @@ export function AssistantVisualization({
         <p className="border-b border-border/40 px-4 py-3 text-xs font-normal text-muted-foreground">
           {title}
         </p>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {tableData.columns.map((col) => (
-                <TableHead key={col}>{col}</TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {tableData.rows.map((row, i) => (
-              <TableRow key={i}>
-                {row.map((cell, j) => (
-                  <TableCell key={j}>{cell}</TableCell>
+        <div className={cn(tableScrollClass)}>
+          <Table>
+            <TableHeader className="sticky top-0 z-10 bg-card">
+              <TableRow>
+                {tableData.columns.map((col) => (
+                  <TableHead key={col}>{col}</TableHead>
                 ))}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {tableData.rows.map((row, i) => (
+                <TableRow key={i}>
+                  {row.map((cell, j) => (
+                    <TableCell key={j}>{cell}</TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     );
   }
@@ -179,7 +198,11 @@ export function AssistantVisualization({
           className={cn(
             chartHeight,
             "mx-auto w-full",
-            size === "stage" ? "max-w-lg" : "max-w-xs"
+            size === "fullscreen"
+              ? "max-w-2xl"
+              : size === "stage"
+                ? "max-w-lg"
+                : "max-w-xs"
           )}
         >
           <PieChart>

@@ -102,32 +102,46 @@ export type Visualization =
       data: { value: string; label: string; change?: string };
     };
 
+export type AssistantProgressStep = {
+  id: string;
+  label: string;
+  status: "pending" | "active" | "done";
+};
+
+/** Legacy chip text or structured follow-up from the assistant API. */
+export type FollowUpSuggestion =
+  | string
+  | {
+      label: string;
+      prompt: string;
+      hint?: string;
+    };
+
+export type VisualizationHistoryEntry = {
+  messageId: string;
+  visualization: Visualization;
+  createdAt: string;
+  sourceQuestion: string;
+};
+
 export type AssistantMessage = {
   id: string;
   role: "user" | "assistant";
   text: string;
   activity?: string;
   visualization?: Visualization;
-  followUpSuggestions?: string[];
+  followUpSuggestions?: FollowUpSuggestion[];
+  progressSteps?: AssistantProgressStep[];
+  sourceQuestion?: string;
   sql?: string;
   streaming?: boolean;
   created_at: string;
-};
-
-export type AssistantDatePreset = "q2" | "last_30d" | "this_month";
-
-export type AssistantContext = {
-  preset: AssistantDatePreset;
-  date_from: string;
-  date_to: string;
-  departments: string[];
 };
 
 export type AssistantLayoutMode = "centered" | "split";
 
 export type AssistantSessionState = {
   messages: AssistantMessage[];
-  context: AssistantContext;
   layoutMode: AssistantLayoutMode;
   activeVisualizationId?: string;
 };

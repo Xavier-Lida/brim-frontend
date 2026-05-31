@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { askAssistantStream } from "@/lib/api/assistant-stream";
+import { createAssistantStreamHandler } from "@/lib/hooks/assistant-stream-handler";
 import {
   decideApproval as decideApprovalApi,
   getApprovals,
@@ -49,7 +50,6 @@ import { toast } from "sonner";
 import type {
   ApprovalRequest,
   ApprovalStatus,
-  AssistantDatePreset,
   AssistantMessage,
   AssistantSessionState,
   ExpenseReport,
@@ -60,6 +60,7 @@ import type {
   Transaction,
   TransactionFlag,
   Visualization,
+  VisualizationHistoryEntry,
 } from "@/lib/types/brim";
 
 type MockStore = {
@@ -82,13 +83,13 @@ type MockStore = {
   assistantMessages: AssistantMessage[];
   assistantSession: AssistantSessionState;
   assistantActiveVisualization?: Visualization;
+  assistantVisualizationHistory: VisualizationHistoryEntry[];
   assistantIsSending: boolean;
   assistantVizFullscreenOpen: boolean;
   setAssistantVizFullscreenOpen: (open: boolean) => void;
-  setAssistantContextPreset: (preset: AssistantDatePreset) => void;
-  setAssistantDepartments: (departments: string[]) => void;
   clearAssistantChat: () => void;
   selectAssistantVisualization: (messageId: string) => void;
+  assistantLatestVisualization?: Visualization;
   searchQuery: string;
   companySpend: typeof companySpend;
   workspaceUser: typeof workspaceUser;
@@ -466,88 +467,56 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  const sendAssistantMessage = useCallback(
-    async (text: string) => {
-      const trimmed = text.trim();
-      if (!trimmed || assistant.isSending) return;
-
-      assistant.setIsSending(true);
-      const history = assistant.buildHistory(assistant.session.messages);
-      assistant.appendUserMessage(trimmed);
-      const assistantId = assistant.beginAssistantMessage();
-      let accumulated = "";
-      let settled = false;
+  const runAssistantStream = useCallback(
+    async (
+      assistantId: string,
+      question: string,
+      historyMessages: AssistantMessage[]
+    ) => {
+      const stream = createAssistantStreamHandler(
+        assistantId,
+        assistant.patchAssistantMessage
+      );
 
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 60000);
 
       try {
         await askAssistantStream(
-          trimmed,
-          history,
-          {
-            date_from: assistant.session.context.date_from,
-            date_to: assistant.session.context.date_to,
-            departments: assistant.session.context.departments,
-          },
-          (event) => {
-            switch (event.type) {
-              case "status":
-                assistant.patchAssistantMessage(assistantId, {
-                  activity: event.message,
-                });
-                break;
-              case "text_delta":
-                accumulated += event.delta;
-                assistant.patchAssistantMessage(assistantId, {
-                  text: accumulated,
-                  activity: undefined,
-                  streaming: true,
-                });
-                break;
-              case "visualization":
-                assistant.patchAssistantMessage(assistantId, {
-                  visualization: event.visualization,
-                });
-                break;
-              case "follow_up":
-                assistant.patchAssistantMessage(assistantId, {
-                  followUpSuggestions: event.suggestions,
-                });
-                break;
-              case "error":
-                settled = true;
-                assistant.patchAssistantMessage(assistantId, {
-                  text: accumulated || event.message,
-                  streaming: false,
-                });
-                break;
-              case "done":
-                settled = true;
-                assistant.patchAssistantMessage(assistantId, {
-                  streaming: false,
-                });
-                break;
-            }
-          },
+          question,
+          assistant.buildHistory(historyMessages),
+          stream.handler,
           controller.signal
         );
       } catch {
-        assistant.patchAssistantMessage(assistantId, {
-          text:
-            accumulated ||
-            "La requête a expiré. Réessayez ou reformulez votre question.",
-          streaming: false,
-        });
+        stream.setErrorText(
+          stream.getAccumulated() ||
+            "La requête a expiré. Réessayez ou reformulez votre question."
+        );
       } finally {
         clearTimeout(timeout);
-        if (!settled) {
-          assistant.patchAssistantMessage(assistantId, { streaming: false });
-        }
-        assistant.setIsSending(false);
+        stream.finalizeUnsettled();
       }
     },
     [assistant]
+  );
+
+  const sendAssistantMessage = useCallback(
+    async (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed || assistant.isSending) return;
+
+      assistant.setIsSending(true);
+      const historyMessages = assistant.session.messages;
+      assistant.appendUserMessage(trimmed);
+      const assistantId = assistant.beginAssistantMessage({
+        sourceQuestion: trimmed,
+      });
+
+      await runAssistantStream(assistantId, trimmed, historyMessages);
+      assistant.setIsSending(false);
+    },
+    [assistant, runAssistantStream]
   );
 
   const value: MockStore = {
@@ -570,11 +539,11 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     assistantMessages: assistant.session.messages,
     assistantSession: assistant.session,
     assistantActiveVisualization: assistant.activeVisualization,
+    assistantLatestVisualization: assistant.latestVisualization,
+    assistantVisualizationHistory: assistant.visualizationHistory,
     assistantIsSending: assistant.isSending,
     assistantVizFullscreenOpen: assistant.vizFullscreenOpen,
     setAssistantVizFullscreenOpen: assistant.setVizFullscreenOpen,
-    setAssistantContextPreset: assistant.setContextPreset,
-    setAssistantDepartments: assistant.setDepartments,
     clearAssistantChat: assistant.clearChat,
     selectAssistantVisualization: assistant.selectVisualization,
     searchQuery,

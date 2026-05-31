@@ -3,17 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { initialAssistantMessages } from "@/lib/mocks/fixtures";
 import { generateId } from "@/lib/mocks/services";
-import {
-  applyContextPreset,
-  createDefaultAssistantContext,
-} from "@/lib/assistant/context-presets";
+import { createInitialProgressSteps } from "@/lib/assistant/assistant-progress";
 import type {
-  AssistantContext,
-  AssistantDatePreset,
   AssistantLayoutMode,
   AssistantMessage,
   AssistantSessionState,
   Visualization,
+  VisualizationHistoryEntry,
 } from "@/lib/types/brim";
 
 const STORAGE_KEY = "brim-assistant-session";
@@ -25,7 +21,6 @@ function deriveLayoutMode(messages: AssistantMessage[]): AssistantLayoutMode {
 function getDefaultSession(): AssistantSessionState {
   return {
     messages: initialAssistantMessages,
-    context: createDefaultAssistantContext(),
     layoutMode: "centered",
     activeVisualizationId: undefined,
   };
@@ -36,11 +31,12 @@ function loadSession(): AssistantSessionState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return getDefaultSession();
-    const parsed = JSON.parse(raw) as AssistantSessionState;
+    const parsed = JSON.parse(raw) as AssistantSessionState & {
+      context?: unknown;
+    };
     const messages = parsed.messages?.length ? parsed.messages : initialAssistantMessages;
     return {
       messages,
-      context: parsed.context ?? createDefaultAssistantContext(),
       layoutMode: deriveLayoutMode(messages),
       activeVisualizationId: parsed.activeVisualizationId,
     };
@@ -48,6 +44,10 @@ function loadSession(): AssistantSessionState {
     return getDefaultSession();
   }
 }
+
+export type BeginAssistantMessageOptions = {
+  sourceQuestion: string;
+};
 
 export function useAssistantSession() {
   const [session, setSession] = useState<AssistantSessionState>(getDefaultSession);
@@ -72,36 +72,35 @@ export function useAssistantSession() {
     };
   }, [session, hydrated]);
 
+  const visualizationHistory = useMemo((): VisualizationHistoryEntry[] => {
+    return session.messages
+      .filter((m) => m.visualization)
+      .map((m) => ({
+        messageId: m.id,
+        visualization: m.visualization!,
+        createdAt: m.created_at,
+        sourceQuestion: m.sourceQuestion ?? "",
+      }));
+  }, [session.messages]);
+
   const activeVisualization = useMemo((): Visualization | undefined => {
     const targetId = session.activeVisualizationId;
     if (targetId) {
       const msg = session.messages.find((m) => m.id === targetId);
       if (msg?.visualization) return msg.visualization;
     }
-    const lastWithViz = [...session.messages]
-      .reverse()
-      .find((m) => m.visualization);
-    return lastWithViz?.visualization;
-  }, [session.messages, session.activeVisualizationId]);
+    return visualizationHistory.at(-1)?.visualization;
+  }, [
+    session.messages,
+    session.activeVisualizationId,
+    visualizationHistory,
+  ]);
 
-  const setContextPreset = useCallback((preset: AssistantDatePreset) => {
-    setSession((prev) => ({
-      ...prev,
-      context: applyContextPreset(preset, prev.context.departments),
-    }));
-  }, []);
-
-  const setDepartments = useCallback((departments: string[]) => {
-    setSession((prev) => ({
-      ...prev,
-      context: { ...prev.context, departments },
-    }));
-  }, []);
+  const latestVisualization = visualizationHistory.at(-1)?.visualization;
 
   const clearChat = useCallback(() => {
     setSession({
       messages: initialAssistantMessages,
-      context: createDefaultAssistantContext(),
       layoutMode: "centered",
       activeVisualizationId: undefined,
     });
@@ -129,21 +128,26 @@ export function useAssistantSession() {
     return userMessage.id;
   }, []);
 
-  const beginAssistantMessage = useCallback(() => {
-    const id = generateId("msg");
-    const assistantMessage: AssistantMessage = {
-      id,
-      role: "assistant",
-      text: "",
-      streaming: true,
-      created_at: new Date().toISOString(),
-    };
-    setSession((prev) => ({
-      ...prev,
-      messages: [...prev.messages, assistantMessage],
-    }));
-    return id;
-  }, []);
+  const beginAssistantMessage = useCallback(
+    (options: BeginAssistantMessageOptions) => {
+      const id = generateId("msg");
+      const assistantMessage: AssistantMessage = {
+        id,
+        role: "assistant",
+        text: "",
+        streaming: true,
+        progressSteps: createInitialProgressSteps(),
+        sourceQuestion: options.sourceQuestion,
+        created_at: new Date().toISOString(),
+      };
+      setSession((prev) => ({
+        ...prev,
+        messages: [...prev.messages, assistantMessage],
+      }));
+      return id;
+    },
+    []
+  );
 
   const patchAssistantMessage = useCallback(
     (
@@ -151,7 +155,12 @@ export function useAssistantSession() {
       patch: Partial<
         Pick<
           AssistantMessage,
-          "text" | "activity" | "visualization" | "followUpSuggestions" | "streaming"
+          | "text"
+          | "activity"
+          | "visualization"
+          | "followUpSuggestions"
+          | "progressSteps"
+          | "streaming"
         >
       >
     ) => {
@@ -160,8 +169,11 @@ export function useAssistantSession() {
         if (patch.visualization) {
           activeVisualizationId = id;
         }
+        const definedPatch = Object.fromEntries(
+          Object.entries(patch).filter(([, value]) => value !== undefined)
+        ) as Partial<AssistantMessage>;
         const messages = prev.messages.map((m) =>
-          m.id === id ? { ...m, ...patch } : m
+          m.id === id ? { ...m, ...definedPatch } : m
         );
         return {
           ...prev,
@@ -196,10 +208,10 @@ export function useAssistantSession() {
     isSending,
     setIsSending,
     activeVisualization,
+    latestVisualization,
+    visualizationHistory,
     vizFullscreenOpen,
     setVizFullscreenOpen,
-    setContextPreset,
-    setDepartments,
     clearChat,
     selectVisualization,
     appendUserMessage,

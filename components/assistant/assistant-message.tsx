@@ -1,23 +1,41 @@
 "use client";
 
+import { useMemo } from "react";
 import { SparkleIcon } from "@phosphor-icons/react";
 import { AssistantMarkdown } from "@/components/assistant/assistant-markdown";
-import { AssistantThinking } from "@/components/assistant/assistant-thinking";
+import { AssistantProgressTasks } from "@/components/assistant/assistant-progress-tasks";
+import { createInitialProgressSteps } from "@/lib/assistant/assistant-progress";
+import { collectSessionEntityHints } from "@/lib/assistant/extract-entity-hints";
 import { cn } from "@/lib/utils";
-import type { AssistantMessage } from "@/lib/types/brim";
+import type { AssistantMessage, Visualization } from "@/lib/types/brim";
 
 type AssistantMessageBubbleProps = {
   message: AssistantMessage;
+  sessionVisualizations?: Visualization[];
   onSelectVisualization?: (messageId: string) => void;
   isActiveVisualization?: boolean;
 };
 
 export function AssistantMessageBubble({
   message,
+  sessionVisualizations = [],
   onSelectVisualization,
   isActiveVisualization,
 }: AssistantMessageBubbleProps) {
   const isUser = message.role === "user";
+
+  const entityHints = collectSessionEntityHints([
+    ...sessionVisualizations,
+    message.visualization,
+  ]);
+
+  const progressSteps = useMemo(() => {
+    if (message.progressSteps?.length) return message.progressSteps;
+    if (message.streaming) return createInitialProgressSteps();
+    return [];
+  }, [message.progressSteps, message.streaming]);
+
+  const showProgress = Boolean(message.streaming) && progressSteps.length > 0;
 
   if (isUser) {
     return (
@@ -60,14 +78,32 @@ export function AssistantMessageBubble({
           role={message.visualization ? "button" : undefined}
           tabIndex={message.visualization ? 0 : undefined}
         >
-          {message.streaming && !message.text ? (
-            <AssistantThinking message={message.activity} />
-          ) : message.text ? (
-            <AssistantMarkdown content={message.text} />
-          ) : (
-            <span className="text-sm text-muted-foreground">…</span>
+          {showProgress && (
+            <AssistantProgressTasks
+              steps={progressSteps}
+              activity={message.activity}
+              className={message.text ? "mb-3" : undefined}
+            />
           )}
-          {message.visualization && (
+          {message.text ? (
+            <div>
+              <AssistantMarkdown
+                content={message.text}
+                entityHints={entityHints}
+              />
+              {message.streaming && (
+                <span
+                  className="ml-0.5 inline-block animate-pulse text-primary"
+                  aria-hidden
+                >
+                  ▍
+                </span>
+              )}
+            </div>
+          ) : !showProgress ? (
+            <span className="text-sm text-muted-foreground">…</span>
+          ) : null}
+          {message.visualization && !message.streaming && (
             <p className="mt-2 text-xs text-primary/70">
               View chart in center →
             </p>

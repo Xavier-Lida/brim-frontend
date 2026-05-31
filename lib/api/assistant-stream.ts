@@ -2,7 +2,7 @@ import { apiFetch } from "@/lib/api/client";
 import { mockLlm } from "@/lib/api/config";
 import type { AssistantHistoryTurn, AssistantResponse } from "@/lib/api/assistant";
 import { askAssistant } from "@/lib/api/assistant";
-import type { AssistantContext, Visualization } from "@/lib/types/brim";
+import type { FollowUpSuggestion, Visualization } from "@/lib/types/brim";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
@@ -11,15 +11,9 @@ export type AssistantStreamEvent =
   | { type: "status"; phase: string; message: string }
   | { type: "text_delta"; delta: string }
   | { type: "visualization"; visualization: Visualization }
-  | { type: "follow_up"; suggestions: string[] }
+  | { type: "follow_up"; suggestions: FollowUpSuggestion[] }
   | { type: "done" }
   | { type: "error"; message: string };
-
-export type AssistantStreamContext = {
-  date_from: string;
-  date_to: string;
-  departments: string[];
-};
 
 const useStreamEndpoint =
   process.env.NEXT_PUBLIC_ASSISTANT_STREAM === "true" ||
@@ -48,7 +42,6 @@ function parseSseChunk(chunk: string): AssistantStreamEvent[] {
 async function streamFromBackend(
   question: string,
   history: AssistantHistoryTurn[],
-  context: AssistantStreamContext,
   onEvent: (event: AssistantStreamEvent) => void,
   signal?: AbortSignal
 ): Promise<void> {
@@ -61,7 +54,7 @@ async function streamFromBackend(
       "Content-Type": "application/json",
       Accept: "text/event-stream",
     },
-    body: JSON.stringify({ question, history, context }),
+    body: JSON.stringify({ question, history }),
     signal,
   });
 
@@ -99,17 +92,32 @@ async function simulateTypingFromResponse(
   response: AssistantResponse,
   onEvent: (event: AssistantStreamEvent) => void
 ): Promise<void> {
-  onEvent({ type: "status", phase: "planning", message: "Analyzing your question…" });
-  await sleep(120);
-  onEvent({ type: "status", phase: "writing", message: "Writing the answer…" });
-  await sleep(120);
+  onEvent({
+    type: "status",
+    phase: "planning",
+    message: "Analyzing your question…",
+  });
+  await sleep(550);
+  onEvent({
+    type: "status",
+    phase: "running_query",
+    message: "Querying spend data…",
+  });
+  await sleep(650);
+  if (response.visualization) {
+    onEvent({ type: "visualization", visualization: response.visualization });
+    await sleep(500);
+  }
+  onEvent({
+    type: "status",
+    phase: "writing",
+    message: "Writing the answer…",
+  });
+  await sleep(600);
   const tokens = response.text.match(/\S+\s*|\s+/g) ?? [response.text];
   for (const token of tokens) {
     onEvent({ type: "text_delta", delta: token });
     await sleep(28);
-  }
-  if (response.visualization) {
-    onEvent({ type: "visualization", visualization: response.visualization });
   }
   if (response.followUpSuggestions?.length) {
     onEvent({ type: "follow_up", suggestions: response.followUpSuggestions });
@@ -120,13 +128,12 @@ async function simulateTypingFromResponse(
 export async function askAssistantStream(
   question: string,
   history: AssistantHistoryTurn[],
-  context: AssistantStreamContext,
   onEvent: (event: AssistantStreamEvent) => void,
   signal?: AbortSignal
 ): Promise<void> {
   if (useStreamEndpoint) {
     try {
-      await streamFromBackend(question, history, context, onEvent, signal);
+      await streamFromBackend(question, history, onEvent, signal);
       return;
     } catch {
       // fall through to JSON + simulated typing
@@ -134,7 +141,7 @@ export async function askAssistantStream(
   }
 
   try {
-    const response = await askAssistant(question, history, { context, signal });
+    const response = await askAssistant(question, history, { signal });
     await simulateTypingFromResponse(response, onEvent);
   } catch (err) {
     const message =
@@ -142,16 +149,4 @@ export async function askAssistantStream(
     onEvent({ type: "error", message });
     onEvent({ type: "done" });
   }
-}
-
-export async function askAssistantWithContext(
-  question: string,
-  history: AssistantHistoryTurn[],
-  context: AssistantStreamContext
-): Promise<AssistantResponse> {
-  return apiFetch<AssistantResponse>("/api/assistant", {
-    method: "POST",
-    params: { mock_llm: mockLlm },
-    body: { question, history, context },
-  });
 }

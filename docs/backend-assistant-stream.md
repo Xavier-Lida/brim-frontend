@@ -21,12 +21,7 @@ Existing JSON endpoint. Request body:
   "question": "Show spend by department this quarter",
   "history": [
     { "question": "...", "summary": "..." }
-  ],
-  "context": {
-    "date_from": "2026-04-01",
-    "date_to": "2026-06-30",
-    "departments": []
-  }
+  ]
 }
 ```
 
@@ -99,7 +94,7 @@ data: {"type":"done"}
 | `status` | `{ "phase": string, "message": string }` | Update the single activity line in the streaming bubble (replaced on each event) |
 | `text_delta` | `{ "delta": string }` | Append to streaming assistant bubble; clears activity line |
 | `visualization` | `{ "visualization": Visualization }` | Switch layout to split; render chart in center stage |
-| `follow_up` | `{ "suggestions": string[] }` | Show clickable chips under last message |
+| `follow_up` | `{ "suggestions": FollowUpSuggestion[] }` | Show clickable chips under last message |
 | `done` | — | Finalize message (`streaming: false`) |
 | `error` | `{ "message": string }` | Show error text; finalize message |
 
@@ -111,15 +106,32 @@ Status `phase` values: `loading_data`, `planning`, `running_query`, `repairing_s
 2. Emit `visualization` when structured data is ready (omitted for scoped/text-only replies)
 3. Emit `status` with phase `writing` before narration (LLM path only)
 4. Stream `text_delta` events (single chunk for the mock engine; token stream for Gemini)
-5. Emit `follow_up` with up to 3 suggestions
+5. Emit `follow_up` with exactly 3 contextual suggestions
 6. Emit `done` (or `error` then `done` on failure)
 
-### Context usage
+### Follow-up suggestions
 
-The backend should filter Supabase queries using:
+Each suggestion is either a legacy string (chip text = prompt) or a structured object:
 
-- `context.date_from` / `context.date_to`
-- `context.departments` (empty array = all departments)
+```json
+{
+  "label": "Mélanie — by category",
+  "prompt": "Show Mélanie Charron's spend breakdown by category",
+  "hint": "Drill into the top spender from your last answer."
+}
+```
+
+- Generated from the last question + SQL rows + visualization (Gemini when `mock_llm=false`, heuristics when mock/degraded).
+- Three angles: narrow (drill into entity), pivot (different dimension), broaden (wider lens / compliance / trend).
+- The UI sends `prompt` on chip click, not `label`.
+
+### Date ranges
+
+There is no session toolbar filter. Table `tx` is the full loaded dataset. Date
+predicates are added only when the user names a period in their question (e.g. « this
+quarter », « last month »). Vague spend questions without a period use all loaded data.
+
+Deterministic mock routes include: `top_employees`, `spend_by_department`, `spend_by_category`, `spend_by_city`, `total_spend`, plus existing compliance/budget capabilities.
 
 ---
 
@@ -147,7 +159,6 @@ arrays (`Record<string, unknown>[]`) for `bar`/`line`/`pie`/`table`.
 Conversation state is stored in `localStorage` key `brim-assistant-session`:
 
 - messages (including `streaming` flag)
-- context presets
 - layout mode (`centered` | `split`)
 - active visualization message id
 

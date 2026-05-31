@@ -5,9 +5,10 @@ import { PaperPlaneRightIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
+import { AssistantFollowUpChoices } from "@/components/assistant/assistant-follow-up-choices";
 import { AssistantMessageBubble } from "@/components/assistant/assistant-message";
-import type { AssistantMessage } from "@/lib/types/brim";
+import { resolveFollowUpChoices } from "@/lib/assistant/follow-up-catalog";
+import type { AssistantMessage, Visualization } from "@/lib/types/brim";
 import { cn } from "@/lib/utils";
 
 type AssistantChatPanelProps = {
@@ -17,6 +18,10 @@ type AssistantChatPanelProps = {
   activeVisualizationId?: string;
   onSend: (text: string) => void;
   onSelectVisualization?: (messageId: string) => void;
+  input?: string;
+  onInputChange?: (value: string) => void;
+  pendingChoice?: string | null;
+  onPendingChoiceChange?: (choice: string | null) => void;
   className?: string;
 };
 
@@ -27,10 +32,23 @@ export function AssistantChatPanel({
   activeVisualizationId,
   onSend,
   onSelectVisualization,
+  input: controlledInput,
+  onInputChange,
+  pendingChoice: controlledPendingChoice,
+  onPendingChoiceChange,
   className,
 }: AssistantChatPanelProps) {
-  const [input, setInput] = useState("");
+  const [internalInput, setInternalInput] = useState("");
+  const [internalPendingChoice, setInternalPendingChoice] = useState<
+    string | null
+  >(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const input = controlledInput ?? internalInput;
+  const setInput = onInputChange ?? setInternalInput;
+  const pendingChoice = controlledPendingChoice ?? internalPendingChoice;
+  const setPendingChoice =
+    onPendingChoiceChange ?? setInternalPendingChoice;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -40,17 +58,45 @@ export function AssistantChatPanel({
     .reverse()
     .find((m) => m.role === "assistant" && !m.streaming);
 
+  const lastAssistantId = lastAssistant?.id;
+
+  useEffect(() => {
+    setPendingChoice(null);
+  }, [lastAssistantId, setPendingChoice]);
+
+  useEffect(() => {
+    if (isSending) setPendingChoice(null);
+  }, [isSending, setPendingChoice]);
+
+  const handleFollowUpSelect = (choice: string | null) => {
+    setPendingChoice(choice);
+    if (choice) setInput(choice);
+    else setInput("");
+  };
+
+  const sessionVisualizations = messages
+    .map((m) => m.visualization)
+    .filter((v): v is Visualization => Boolean(v));
+
+  const followUpContext = (() => {
+    if (!lastAssistant) return undefined;
+    const assistantIndex = messages.findIndex((m) => m.id === lastAssistant.id);
+    const priorUser = [...messages.slice(0, assistantIndex)]
+      .reverse()
+      .find((m) => m.role === "user");
+    return {
+      lastQuestion: priorUser?.text ?? lastAssistant.sourceQuestion ?? "",
+      vizType: lastAssistant.visualization?.type,
+    };
+  })();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = input.trim();
     if (!trimmed || isSending) return;
     setInput("");
+    setPendingChoice(null);
     onSend(trimmed);
-  };
-
-  const handleSend = (text: string) => {
-    if (isSending) return;
-    onSend(text);
   };
 
   return (
@@ -67,6 +113,7 @@ export function AssistantChatPanel({
             <AssistantMessageBubble
               key={msg.id}
               message={msg}
+              sessionVisualizations={sessionVisualizations}
               onSelectVisualization={
                 layoutMode === "split" ? onSelectVisualization : undefined
               }
@@ -78,18 +125,14 @@ export function AssistantChatPanel({
       </ScrollArea>
 
       {lastAssistant?.followUpSuggestions && !isSending && (
-        <div className="flex flex-wrap gap-2 px-1 py-2">
-          {lastAssistant.followUpSuggestions.map((suggestion) => (
-            <Badge
-              key={suggestion}
-              variant="secondary"
-              className="cursor-pointer bg-blue-soft font-normal hover:bg-blue-soft-strong"
-              onClick={() => handleSend(suggestion)}
-            >
-              {suggestion}
-            </Badge>
-          ))}
-        </div>
+        <AssistantFollowUpChoices
+          choices={resolveFollowUpChoices(
+            lastAssistant.followUpSuggestions,
+            followUpContext
+          )}
+          selected={pendingChoice}
+          onSelect={handleFollowUpSelect}
+        />
       )}
 
       <form
@@ -98,7 +141,12 @@ export function AssistantChatPanel({
       >
         <Input
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            setInput(e.target.value);
+            if (pendingChoice && e.target.value !== pendingChoice) {
+              setPendingChoice(null);
+            }
+          }}
           placeholder="Ask about spend, flags, or policy..."
           disabled={isSending}
           className="border-border/60 bg-muted/50"

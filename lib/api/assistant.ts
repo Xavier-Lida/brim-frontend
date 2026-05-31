@@ -8,12 +8,6 @@ export type AssistantHistoryTurn = {
   text?: string;
 };
 
-export type AssistantRequestContext = {
-  date_from: string;
-  date_to: string;
-  departments: string[];
-};
-
 export type AssistantResponse = Omit<
   AssistantMessage,
   "id" | "role" | "created_at" | "streaming"
@@ -24,7 +18,6 @@ export async function askAssistant(
   history: AssistantHistoryTurn[] = [],
   options?: {
     mock_llm?: boolean;
-    context?: AssistantRequestContext;
     signal?: AbortSignal;
   }
 ): Promise<AssistantResponse> {
@@ -32,10 +25,6 @@ export async function askAssistant(
     method: "POST",
     params: { mock_llm: options?.mock_llm ?? mockLlm },
     signal: options?.signal,
-    body: {
-      question,
-      history,
-      ...(options?.context ? { context: options.context } : {}),
-    },
+    body: { question, history },
   });
 }
