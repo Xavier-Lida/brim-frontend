@@ -33,8 +33,8 @@ export async function updatePolicy(
   });
 }
 
-export async function deletePolicy(id: string): Promise<{ id: string; active: boolean }> {
-  return apiFetch<{ id: string; active: boolean }>(`/api/policies/${id}`, {
+export async function deletePolicy(id: string): Promise<{ id: string; deleted: boolean }> {
+  return apiFetch<{ id: string; deleted: boolean }>(`/api/policies/${id}`, {
     method: "DELETE",
   });
 }
