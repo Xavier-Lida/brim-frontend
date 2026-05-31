@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { Policy } from "@/lib/types/brim";
 import { TrashIcon } from "@phosphor-icons/react";
+import { EditPolicyDialog } from "@/components/policy/edit-policy-dialog";
 
 function PolicyIcon({ req }: { req: Policy["policy_requirements"] }) {
   if (
@@ -50,8 +51,8 @@ export function PolicyRuleCard({
   const categoryEntries = Object.entries(req.category_limits_cad ?? {});
 
   return (
-    <div className="flex items-start gap-4 rounded-xl border border-border/50 bg-card p-6 shadow-none">
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-soft text-primary">
+    <div className="flex items-start gap-4 rounded-[18px] border border-dim-gray/40 bg-card p-6 shadow-[rgba(0,0,0,0.05)_0px_3px_0px_0px]">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-powder-blue text-hope-blue">
         <PolicyIcon req={req} />
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -97,6 +98,7 @@ export function PolicyRuleCard({
           checked={policy.active}
           onCheckedChange={() => onToggle(policy.id)}
         />
+        <EditPolicyDialog policy={policy} />
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="ghost" size="icon-sm">

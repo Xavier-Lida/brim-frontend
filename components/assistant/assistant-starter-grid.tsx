@@ -27,14 +27,14 @@ export function AssistantStarterGrid({
               onSelect(isSelected ? null : starter.prompt)
             }
             className={cn(
-              "rounded-xl border px-4 py-3 text-left transition-colors",
-              "border-border/50 bg-card hover:bg-blue-soft/40 disabled:opacity-50",
+              "rounded-[18px] border px-4 py-3 text-left transition-all shadow-[rgba(0,0,0,0.05)_0px_3px_0px_0px]",
+              "border-dim-gray/40 bg-card hover:bg-blue-soft/40 hover:border-primary/30 hover:shadow-[rgba(154,207,246,0.4)_0px_5px_0px_0px] disabled:opacity-50",
               isSelected &&
-                "border-primary/40 bg-blue-soft ring-1 ring-primary/30"
+                "border-primary/40 bg-blue-soft shadow-[rgba(154,207,246,0.5)_0px_5px_0px_0px]"
             )}
           >
-            <p className="text-xs text-muted-foreground">{starter.category}</p>
-            <p className="mt-1 text-sm font-normal text-foreground">
+            <p className="text-xs text-muted-foreground tracking-[-0.22px]">{starter.category}</p>
+            <p className="mt-1 text-sm font-medium text-deep-ocean tracking-[-0.25px]">
               {starter.title}
             </p>
           </button>

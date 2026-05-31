@@ -47,45 +47,45 @@ export function AppHeader() {
   const title = pageTitles[pathname] ?? "Brim";
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border/60 bg-background/80 px-4 backdrop-blur-sm">
-      <SidebarTrigger />
-      <h1 className="hidden text-sm font-normal text-muted-foreground sm:block">
+    <header className="flex h-16 shrink-0 items-center gap-3 border-b border-dim-gray/40 bg-arctic-mist px-5">
+      <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
+      <h1 className="hidden text-base font-semibold text-deep-ocean tracking-[-0.29px] sm:block" style={{ fontSize: "16px", lineHeight: 1.43 }}>
         {title}
       </h1>
       <div className="ml-auto flex items-center gap-2">
         <div className="relative hidden w-64 md:block">
-          <MagnifyingGlassIcon className="absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground" />
+          <MagnifyingGlassIcon className="absolute top-1/2 left-3.5 -translate-y-1/2 text-muted-foreground" size={15} />
           <Input
             placeholder="Search transactions..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="border-border/60 bg-muted/50 pl-8"
+            className="pl-9 h-9 border-dim-gray/60"
           />
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" className="relative">
-              <BellIcon />
+            <Button variant="ghost" size="icon-sm" className="relative text-muted-foreground hover:text-foreground">
+              <BellIcon size={18} />
               {unreadNotificationsCount > 0 && (
-                <span className="absolute top-1 right-1 size-2 rounded-full bg-destructive" />
+                <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-hope-blue" />
               )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
+          <DropdownMenuContent align="end" className="w-80 rounded-[18px] border-dim-gray/40">
             <DropdownMenuGroup>
-              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-deep-ocean font-semibold tracking-[-0.25px]">Notifications</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {notifications.map((notif) => (
                 <DropdownMenuItem
                   key={notif.id}
-                  className="flex flex-col items-start gap-0.5 py-2"
+                  className="flex flex-col items-start gap-0.5 py-2.5 rounded-[10px]"
                   onClick={() => markNotificationRead(notif.id)}
                 >
                   <span
                     className={
                       notif.read
                         ? "text-sm text-muted-foreground"
-                        : "text-sm font-normal text-foreground"
+                        : "text-sm font-medium text-foreground tracking-[-0.25px]"
                     }
                   >
                     {notif.message}

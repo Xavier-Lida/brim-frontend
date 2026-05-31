@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import { TransactionsTable, TransactionsTableSkeleton } from "@/components/transactions/transactions-table";
+import { CreateMockTransactionDialog } from "@/components/transactions/create-mock-transaction-dialog";
 import { Button } from "@/components/ui/button";
 import { useMockStore } from "@/lib/hooks/use-mock-store";
 
@@ -40,14 +41,17 @@ export default function TransactionsPage() {
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
-      <div>
-        <h2 className="text-xl font-normal text-foreground/90">Transactions</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Showing {filtered.length} loaded transaction
-          {filtered.length !== 1 ? "s" : ""}
-          {searchQuery ? ` matching "${searchQuery}"` : ""}
-          {!searchQuery && transactionsHasMore ? " · more available" : ""}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-normal text-foreground/90">Transactions</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Showing {filtered.length} loaded transaction
+            {filtered.length !== 1 ? "s" : ""}
+            {searchQuery ? ` matching "${searchQuery}"` : ""}
+            {!searchQuery && transactionsHasMore ? " · more available" : ""}
+          </p>
+        </div>
+        <CreateMockTransactionDialog onResult={() => void loadTransactions()} />
       </div>
       <TransactionsTable transactions={filtered} />
       {transactionsHasMore && !searchQuery.trim() && (

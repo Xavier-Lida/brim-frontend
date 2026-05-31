@@ -125,6 +125,15 @@ type MockStore = {
     policy_requirements: PolicyRequirements;
     effective_date?: string;
   }) => Promise<void>;
+  editPolicy: (
+    id: string,
+    data: Partial<{
+      policy_name: string;
+      policy_requirements: PolicyRequirements;
+      effective_date: string;
+      active: boolean;
+    }>
+  ) => Promise<void>;
   importPolicies: (drafts: PolicyImportDraft[]) => Promise<void>;
   analyzeImport: (input: {
     content?: string;
@@ -456,6 +465,23 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     [afterPolicyChange]
   );
 
+  const editPolicy = useCallback(
+    async (
+      id: string,
+      data: Partial<{
+        policy_name: string;
+        policy_requirements: PolicyRequirements;
+        effective_date: string;
+        active: boolean;
+      }>
+    ) => {
+      const updated = await updatePolicy(id, data);
+      setPolicies((prev) => prev.map((p) => (p.id === id ? updated : p)));
+      await afterPolicyChange();
+    },
+    [afterPolicyChange]
+  );
+
   const importPolicies = useCallback(async (drafts: PolicyImportDraft[]) => {
     const result = await confirmPolicyImport(drafts);
     setPolicies((prev) => [...result.policies, ...prev]);
@@ -642,6 +668,7 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     togglePolicy,
     deletePolicy,
     addPolicy,
+    editPolicy,
     importPolicies,
     analyzeImport,
     decideApproval,
